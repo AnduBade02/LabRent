@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LabRent - Laboratory Equipment Rental System</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- ==================== AUTH SCREEN ==================== -->
+<div id="auth-screen">
+    <div class="auth-container">
+        <h2>LabRent</h2>
+        <p style="text-align:center; margin-bottom:20px; color:#666;">Laboratory Equipment Rental System</p>
+
+        <div class="auth-tabs">
+            <button class="active" onclick="showAuthTab('login')">Login</button>
+            <button onclick="showAuthTab('register')">Register</button>
+        </div>
+
+        <div id="auth-alert"></div>
+
+        <!-- Login Form -->
+        <div id="login-form" class="card">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="login-username" placeholder="e.g. admin">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="login-password" placeholder="e.g. admin123">
+            </div>
+            <button class="btn btn-primary" style="width:100%" onclick="login()">Login</button>
+            <p style="margin-top:12px; font-size:0.8rem; color:#888; text-align:center;">
+                Test accounts: <strong>admin/admin123</strong> | <strong>ion.popescu/parola123</strong>
+            </p>
+        </div>
+
+        <!-- Register Form -->
+        <div id="register-form" class="card" style="display:none">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="reg-username" placeholder="min 3 characters">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="reg-email" placeholder="your@email.com">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="reg-password" placeholder="min 6 characters">
+            </div>
+            <div class="form-group">
+                <label>User Type</label>
+                <select id="reg-usertype">
+                    <option value="STUDENT">Student</option>
+                    <option value="NON_STUDENT">Non-Student</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" style="width:100%" onclick="register()">Register</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== APP SCREEN ==================== -->
+<div id="app-screen" class="hidden">
+
+    <header>
+        <h1>LabRent</h1>
+        <div class="user-info">
+            <span id="header-user"></span>
+            <span id="header-role" class="badge"></span>
+            <button onclick="logout()">Logout</button>
+        </div>
+    </header>
+
+    <nav id="main-nav">
+        <button class="active" onclick="showSection('dashboard')">Dashboard</button>
+        <button onclick="showSection('equipment')">Equipment</button>
+        <button onclick="showSection('my-requests')">My Requests</button>
+        <button onclick="showSection('new-request')">New Request</button>
+        <!-- Admin-only tabs -->
+        <button class="admin-only" onclick="showSection('pending-requests')">Pending Requests</button>
+        <button class="admin-only" onclick="showSection('all-users')">Users</button>
+        <button class="admin-only" onclick="showSection('assessments')">Assessments</button>
+        <button class="admin-only" onclick="showSection('strategy')">Strategy</button>
+    </nav>
+
+    <main>
+        <div id="app-alert"></div>
+
+        <!-- ========== DASHBOARD ========== -->
+        <div id="section-dashboard" class="section active">
+            <h2 style="margin-bottom:16px">Dashboard</h2>
+            <div class="stats" id="dashboard-stats"></div>
+            <div id="dashboard-content"></div>
+        </div>
+
+        <!-- ========== EQUIPMENT ========== -->
+        <div id="section-equipment" class="section">
+            <div class="section-header">
+                <h2>Equipment</h2>
+                <button class="btn btn-primary admin-only" onclick="showAddEquipmentModal()">+ Add Equipment</button>
+            </div>
+            <div class="grid" id="equipment-list"></div>
+        </div>
+
+        <!-- ========== MY REQUESTS ========== -->
+        <div id="section-my-requests" class="section">
+            <h2 style="margin-bottom:16px">My Requests</h2>
+            <div id="my-requests-list"></div>
+        </div>
+
+        <!-- ========== NEW REQUEST ========== -->
+        <div id="section-new-request" class="section">
+            <h2 style="margin-bottom:16px">Create Rental Request</h2>
+            <div class="card" style="max-width:500px">
+                <div class="form-group">
+                    <label>Equipment</label>
+                    <select id="req-equipment"></select>
+                </div>
+                <div class="form-group">
+                    <label>Start Date</label>
+                    <input type="date" id="req-start">
+                </div>
+                <div class="form-group">
+                    <label>End Date</label>
+                    <input type="date" id="req-end">
+                </div>
+                <div class="form-group">
+                    <label>Project Description</label>
+                    <textarea id="req-description" placeholder="Describe your project..."></textarea>
+                </div>
+                <div id="exam-fields">
+                    <div class="form-group">
+                        <label><input type="checkbox" id="req-exam" onchange="toggleExamFields()"> This is for an exam</label>
+                    </div>
+                    <div id="exam-extra" class="hidden">
+                        <div class="form-group">
+                            <label>Exam Date</label>
+                            <input type="date" id="req-exam-date">
+                        </div>
+                        <div class="form-group">
+                            <label>Justification</label>
+                            <textarea id="req-justification" placeholder="Explain why you need this for the exam..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-success" onclick="createRequest()">Submit Request</button>
+            </div>
+        </div>
+
+        <!-- ========== PENDING REQUESTS (Admin) ========== -->
+        <div id="section-pending-requests" class="section">
+            <h2 style="margin-bottom:16px">Pending Requests</h2>
+            <div id="pending-requests-list"></div>
+        </div>
+
+        <!-- ========== ALL USERS (Admin) ========== -->
+        <div id="section-all-users" class="section">
+            <h2 style="margin-bottom:16px">All Users</h2>
+            <div id="users-table-container"></div>
+        </div>
+
+        <!-- ========== ASSESSMENTS (Admin) ========== -->
+        <div id="section-assessments" class="section">
+            <h2 style="margin-bottom:16px">Return Assessments</h2>
+            <p style="margin-bottom:12px; color:#666;">Requests with RETURNED status that need assessment:</p>
+            <div id="assessments-list"></div>
+        </div>
+
+        <!-- ========== STRATEGY (Admin) ========== -->
+        <div id="section-strategy" class="section">
+            <h2 style="margin-bottom:16px">Prioritization Strategy</h2>
+            <div class="card" style="max-width:400px">
+                <p style="margin-bottom:12px;">Current strategy: <strong id="current-strategy"></strong></p>
+                <div class="form-group">
+                    <label>Switch Strategy</label>
+                    <select id="strategy-select">
+                        <option value="weightedScoring">Weighted Scoring</option>
+                        <option value="fifo">FIFO (First In, First Out)</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="changeStrategy()">Apply</button>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- ========== MODALS ========== -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+    <div class="modal" id="modal-content"></div>
+</div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>

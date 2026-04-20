@@ -1,67 +1,57 @@
 package ro.atemustard.labrent.dto;
 
-/*
- * ==========================================================================
- * EQUIPMENT DTO
- * ==========================================================================
- *
- * Acelasi principiu ca UserDTO — transporta date despre echipament
- * fara a expune entitatea JPA direct.
- *
- * Aici nu avem un camp "secret" de ascuns (ca parola la User),
- * dar DTO-ul e totusi util pentru:
- *   - Validare input (cand admin-ul adauga echipament nou)
- *   - Decuplare (entitatea poate evolua independent de API)
- *   - Consistenta (toate entitatile au DTO — regula proiectului)
- *
- * ==========================================================================
- */
+import ro.atemustard.labrent.model.Equipment;
 
-// TODO 0: Adauga importurile:
-//   import jakarta.validation.constraints.NotBlank;
-//   import jakarta.validation.constraints.Size;
-//   import ro.atemustard.labrent.model.Equipment;
+import java.time.LocalDateTime;
 
 public class EquipmentDTO {
 
     private Long id;
-
-    // TODO 1: Adauga validare:
-    //   @NotBlank(message = "Equipment name is required")
-    //   @Size(max = 100, message = "Equipment name must be at most 100 characters")
     private String name;
-
-    // NOTA: description nu e obligatorie — nu punem @NotBlank
     private String description;
-
-    // TODO 2: Adauga validare:
-    //   @NotBlank(message = "Category is required")
     private String category;
-
-    // Status-ul e String in DTO (nu enum EquipmentStatus).
-    // Nu punem validare — status-ul e gestionat de sistem, nu setat de user.
     private String status;
+    private Integer totalQuantity;
+    private Integer availableQuantity;
+    private LocalDateTime createdAt;
 
-    // QR code — generat de sistem, nu vine de la user.
-    private String qrCode;
+    public EquipmentDTO() {
+    }
 
-    // TODO 3: Constructor fara argumente
+    public static EquipmentDTO fromEntity(Equipment equipment) {
+        EquipmentDTO dto = new EquipmentDTO();
+        dto.setId(equipment.getId());
+        dto.setName(equipment.getName());
+        dto.setDescription(equipment.getDescription());
+        dto.setCategory(equipment.getCategory());
+        dto.setStatus(equipment.getStatus().name());
+        dto.setTotalQuantity(equipment.getTotalQuantity());
+        dto.setAvailableQuantity(equipment.getAvailableQuantity());
+        dto.setCreatedAt(equipment.getCreatedAt());
+        return dto;
+    }
 
-    // TODO 4: Constructor cu toti parametrii (id, name, description, category, status, qrCode)
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    // TODO 5: Getteri si setteri pentru toate campurile
-    //   6 campuri × 2 = 12 metode.
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    // TODO 6: Metoda statica fromEntity:
-    //
-    //   public static EquipmentDTO fromEntity(Equipment equipment) {
-    //       EquipmentDTO dto = new EquipmentDTO();
-    //       dto.setId(equipment.getId());
-    //       dto.setName(equipment.getName());
-    //       dto.setDescription(equipment.getDescription());
-    //       dto.setCategory(equipment.getCategory());
-    //       dto.setStatus(equipment.getStatus().name());  // enum → String
-    //       dto.setQrCode(equipment.getQrCode());
-    //       return dto;
-    //   }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
+    public Integer getTotalQuantity() { return totalQuantity; }
+    public void setTotalQuantity(Integer totalQuantity) { this.totalQuantity = totalQuantity; }
+
+    public Integer getAvailableQuantity() { return availableQuantity; }
+    public void setAvailableQuantity(Integer availableQuantity) { this.availableQuantity = availableQuantity; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

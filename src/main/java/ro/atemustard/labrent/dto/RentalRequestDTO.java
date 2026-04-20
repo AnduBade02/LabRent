@@ -1,94 +1,88 @@
 package ro.atemustard.labrent.dto;
 
-/*
- * ==========================================================================
- * RENTAL REQUEST DTO
- * ==========================================================================
- *
- * CONCEPT IMPORTANT: In DTO-uri NU punem entitati intregi!
- * ========================================================
- *
- * In entitatea RentalRequest avem:
- *   private User user;           // obiect intreg User
- *   private Equipment equipment; // obiect intreg Equipment
- *
- * In DTO punem doar ID-ul + cateva campuri utile pentru afisare:
- *   private Long userId;           // doar ID-ul
- *   private String username;       // pentru afisare in UI
- *   private Long equipmentId;      // doar ID-ul
- *   private String equipmentName;  // pentru afisare in UI
- *
- * De ce?
- *   1. Evitam dependente circulare (User → RentalRequest → User → ...)
- *   2. Reducem dimensiunea raspunsului JSON
- *   3. Frontend-ul primeste exact ce are nevoie — nimic in plus
- *
- * Cand frontend-ul trimite o CERERE NOUA, trimite doar:
- *   { equipmentId: 5, startDate: "2024-04-01", endDate: "2024-04-15", projectDescription: "..." }
- * userId-ul il luam din JWT token (userul logat) — nu il trimite frontend-ul!
- *
- * Cand backend-ul RASPUNDE cu o cerere, trimite:
- *   { id: 1, userId: 3, username: "ion", equipmentId: 5, equipmentName: "Arduino Uno",
- *     startDate: "2024-04-01", endDate: "2024-04-15", status: "PENDING", projectDescription: "..." }
- *
- * ==========================================================================
- */
+import ro.atemustard.labrent.model.RentalRequest;
 
-// TODO 0: Adauga importurile:
-//   import jakarta.validation.constraints.NotBlank;
-//   import jakarta.validation.constraints.NotNull;
-//   import ro.atemustard.labrent.model.RentalRequest;
-//   import java.time.LocalDate;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class RentalRequestDTO {
 
     private Long id;
-
-    // Informatii despre user — doar ID + username pentru afisare
     private Long userId;
     private String username;
-
-    // Informatii despre echipament — doar ID + name pentru afisare
-    // TODO 1: Adauga @NotNull(message = "Equipment ID is required")
-    //   Cand clientul face o cerere, TREBUIE sa specifice ce echipament vrea.
     private Long equipmentId;
     private String equipmentName;
-
-    // TODO 2: Adauga @NotNull(message = "Start date is required")
     private LocalDate startDate;
-
-    // TODO 3: Adauga @NotNull(message = "End date is required")
     private LocalDate endDate;
-
-    // Status-ul e gestionat de sistem — nu vine de la user.
     private String status;
-
-    // Descrierea proiectului — optional, dar ajuta la scoring.
     private String projectDescription;
+    private Double priorityScore;
+    private Boolean isForExam;
+    private LocalDate examDate;
+    private String justification;
+    private LocalDateTime createdAt;
 
-    // TODO 4: Constructor fara argumente
+    public RentalRequestDTO() {
+    }
 
-    // TODO 5: Constructor cu toti parametrii
+    public static RentalRequestDTO fromEntity(RentalRequest request) {
+        RentalRequestDTO dto = new RentalRequestDTO();
+        dto.setId(request.getId());
+        dto.setUserId(request.getUser().getId());
+        dto.setUsername(request.getUser().getUsername());
+        dto.setEquipmentId(request.getEquipment().getId());
+        dto.setEquipmentName(request.getEquipment().getName());
+        dto.setStartDate(request.getStartDate());
+        dto.setEndDate(request.getEndDate());
+        dto.setStatus(request.getStatus().name());
+        dto.setProjectDescription(request.getProjectDescription());
+        dto.setPriorityScore(request.getPriorityScore());
+        dto.setIsForExam(request.getIsForExam());
+        dto.setExamDate(request.getExamDate());
+        dto.setJustification(request.getJustification());
+        dto.setCreatedAt(request.getCreatedAt());
+        return dto;
+    }
 
-    // TODO 6: Getteri si setteri pentru TOATE campurile
-    //   9 campuri × 2 = 18 metode. Da, sunt multe — IDE-ul le genereaza instant.
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    // TODO 7: Metoda statica fromEntity:
-    //
-    //   public static RentalRequestDTO fromEntity(RentalRequest request) {
-    //       RentalRequestDTO dto = new RentalRequestDTO();
-    //       dto.setId(request.getId());
-    //       dto.setUserId(request.getUser().getId());
-    //       dto.setUsername(request.getUser().getUsername());
-    //       dto.setEquipmentId(request.getEquipment().getId());
-    //       dto.setEquipmentName(request.getEquipment().getName());
-    //       dto.setStartDate(request.getStartDate());
-    //       dto.setEndDate(request.getEndDate());
-    //       dto.setStatus(request.getStatus().name());
-    //       dto.setProjectDescription(request.getProjectDescription());
-    //       return dto;
-    //   }
-    //
-    //   Observa: request.getUser().getId() — navigam prin relatia @ManyToOne.
-    //   JPA incarca User-ul automat (chiar si cu LAZY, la .getUser() il incarca).
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
+
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
+
+    public Long getEquipmentId() { return equipmentId; }
+    public void setEquipmentId(Long equipmentId) { this.equipmentId = equipmentId; }
+
+    public String getEquipmentName() { return equipmentName; }
+    public void setEquipmentName(String equipmentName) { this.equipmentName = equipmentName; }
+
+    public LocalDate getStartDate() { return startDate; }
+    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
+
+    public LocalDate getEndDate() { return endDate; }
+    public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
+    public String getProjectDescription() { return projectDescription; }
+    public void setProjectDescription(String projectDescription) { this.projectDescription = projectDescription; }
+
+    public Double getPriorityScore() { return priorityScore; }
+    public void setPriorityScore(Double priorityScore) { this.priorityScore = priorityScore; }
+
+    public Boolean getIsForExam() { return isForExam; }
+    public void setIsForExam(Boolean isForExam) { this.isForExam = isForExam; }
+
+    public LocalDate getExamDate() { return examDate; }
+    public void setExamDate(LocalDate examDate) { this.examDate = examDate; }
+
+    public String getJustification() { return justification; }
+    public void setJustification(String justification) { this.justification = justification; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

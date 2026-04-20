@@ -1,59 +1,26 @@
 package ro.atemustard.labrent.repository;
 
-/*
- * ==========================================================================
- * RENTAL REQUEST REPOSITORY
- * ==========================================================================
- *
- * Acest repository are query-uri mai complexe pentru ca RentalRequest
- * leaga User de Equipment — cautam dupa user ID, equipment ID, status, etc.
- *
- * CONCEPT NOU: Query pe relatii (@ManyToOne)
- * ------------------------------------------
- * Cand ai un camp 'user' de tip User cu @ManyToOne, Spring stie sa caute
- * dupa campurile user-ului folosind underscore sau camelCase:
- *
- *   findByUserId(Long userId)
- *   → Spring parseaza: find + By + User + Id
- *   → Genereaza: SELECT * FROM rental_requests WHERE user_id = ?
- *
- *   findByUserIdAndStatus(Long userId, RequestStatus status)
- *   → SELECT * FROM rental_requests WHERE user_id = ? AND status = ?
- *
- * Spring stie ca 'user' e un @ManyToOne si ca 'id' e campul @Id al lui User,
- * deci traduce automat in user_id (coloana FK din tabel).
- *
- * ==========================================================================
- */
+import org.springframework.data.jpa.repository.JpaRepository;
+import ro.atemustard.labrent.model.RentalRequest;
+import ro.atemustard.labrent.model.RequestStatus;
 
-// TODO 0: Adauga importurile:
-//   import org.springframework.data.jpa.repository.JpaRepository;
-//   import ro.atemustard.labrent.model.RentalRequest;
-//   import ro.atemustard.labrent.model.RequestStatus;
-//   import java.util.List;
+import java.util.List;
 
-public interface RentalRequestRepository /* TODO 1: extends JpaRepository<RentalRequest, Long> */ {
+public interface RentalRequestRepository extends JpaRepository<RentalRequest, Long> {
 
-    // TODO 2: Toate cererile unui user:
-    //   List<RentalRequest> findByUserId(Long userId);
-    //
-    //   Spring genereaza: SELECT * FROM rental_requests WHERE user_id = ?
-    //   Folosim: pagina "Cererile mele" — clientul vede toate cererile lui.
+    List<RentalRequest> findByUserId(Long userId);
 
-    // TODO 3: Toate cererile pentru un echipament:
-    //   List<RentalRequest> findByEquipmentId(Long equipmentId);
-    //
-    //   Folosim: admin-ul vede cine a cerut un anumit echipament.
+    List<RentalRequest> findByEquipmentId(Long equipmentId);
 
-    // TODO 4: Toate cererile cu un anumit status:
-    //   List<RentalRequest> findByStatus(RequestStatus status);
-    //
-    //   Folosim: admin-ul vede toate cererile PENDING (de aprobat).
+    List<RentalRequest> findByStatus(RequestStatus status);
 
-    // TODO 5: Cererile unui user cu un anumit status:
-    //   List<RentalRequest> findByUserIdAndStatus(Long userId, RequestStatus status);
-    //
-    //   Combinatie — Spring parseaza: find + By + UserId + And + Status
-    //   Genereaza: SELECT * FROM rental_requests WHERE user_id = ? AND status = ?
-    //   Folosim: "Arata-mi doar cererile mele aprobate"
+    List<RentalRequest> findByUserIdAndStatus(Long userId, RequestStatus status);
+
+    List<RentalRequest> findByEquipmentIdAndStatus(Long equipmentId, RequestStatus status);
+
+    long countByUserIdAndStatusIn(Long userId, List<RequestStatus> statuses);
+
+    List<RentalRequest> findByStatusOrderByPriorityScoreDesc(RequestStatus status);
+
+    List<RentalRequest> findByEquipmentIdAndStatusOrderByPriorityScoreDesc(Long equipmentId, RequestStatus status);
 }
