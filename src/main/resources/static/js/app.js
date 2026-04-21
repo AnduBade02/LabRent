@@ -373,15 +373,28 @@ async function createRequest() {
 // ===== PENDING REQUESTS (Admin) =====
 async function loadPendingRequests() {
     try {
-        const list = await api('/rental-requests/pending');
+        const list = await api('/rental-requests/all');
         const container = document.getElementById('pending-requests-list');
         if (list.length === 0) {
-            container.innerHTML = '<p style="color:#888">No pending requests.</p>';
+            container.innerHTML = '<p style="color:#888">No requests.</p>';
             return;
         }
-        // Sort by priority score descending
-        list.sort((a, b) => (b.priorityScore || 0) - (a.priorityScore || 0));
-        container.innerHTML = list.map(req => renderRequestCard(req, true)).join('');
+
+        const pending = list.filter(r => r.status === 'PENDING')
+            .sort((a, b) => (b.priorityScore || 0) - (a.priorityScore || 0));
+        const approved = list.filter(r => r.status === 'APPROVED');
+        const rented = list.filter(r => r.status === 'RENTED');
+        const returned = list.filter(r => r.status === 'RETURNED');
+
+        const section = (title, items) => items.length
+            ? `<h3 style="margin:16px 0 8px">${title} (${items.length})</h3>${items.map(r => renderRequestCard(r, true)).join('')}`
+            : '';
+
+        container.innerHTML =
+            section('Pending — awaiting decision', pending) +
+            section('Approved — ready to be handed out', approved) +
+            section('Rented — currently with user', rented) +
+            section('Returned — awaiting assessment', returned);
     } catch (e) {
         showAlert('app-alert', e.message, 'error');
     }
@@ -412,7 +425,7 @@ async function markRented(id) {
     try {
         await api('/rental-requests/' + id + '/rent', { method: 'PUT' });
         showAlert('app-alert', 'Marked as rented!', 'success');
-        loadMyRequests();
+        reloadRequestsView();
     } catch (e) {
         showAlert('app-alert', e.message, 'error');
     }
@@ -422,9 +435,18 @@ async function markReturned(id) {
     try {
         await api('/rental-requests/' + id + '/return', { method: 'PUT' });
         showAlert('app-alert', 'Marked as returned!', 'success');
-        loadMyRequests();
+        reloadRequestsView();
     } catch (e) {
         showAlert('app-alert', e.message, 'error');
+    }
+}
+
+function reloadRequestsView() {
+    const pendingSection = document.getElementById('section-pending-requests');
+    if (pendingSection && pendingSection.classList.contains('active')) {
+        loadPendingRequests();
+    } else {
+        loadMyRequests();
     }
 }
 
@@ -518,7 +540,6 @@ async function loadAssessments() {
         // Show assessment history per user
         html += '<h3 style="margin-bottom:12px">Assessment History by User</h3>';
         for (const u of users) {
-            if (u.role === 'ADMIN') continue;
             try {
                 const assessments = await api('/return-assessments/user/' + u.id);
                 if (assessments.length > 0) {

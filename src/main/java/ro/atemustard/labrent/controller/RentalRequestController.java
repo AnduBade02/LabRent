@@ -36,6 +36,11 @@ public class RentalRequestController {
         return ResponseEntity.ok(rentalRequestService.getPendingRequests());
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<List<RentalRequestDTO>> getAllRequests() {
+        return ResponseEntity.ok(rentalRequestService.getAllRequests());
+    }
+
     @GetMapping("/prioritized/{equipmentId}")
     public ResponseEntity<List<RentalRequestDTO>> getPrioritizedRequests(@PathVariable Long equipmentId) {
         return ResponseEntity.ok(rentalRequestService.getPrioritizedPendingRequests(equipmentId));

@@ -44,11 +44,11 @@ public class WeightedScoringStrategy implements PrioritizationStrategy {
             }
         }
 
-        // Tiebreaker: earlier requests get a tiny bonus
+        // Tiebreaker: earlier requests get a tiny bonus (older = higher)
         if (request.getCreatedAt() != null) {
-            score += 0.0001 * (Long.MAX_VALUE - java.time.ZoneOffset.UTC
-                    .getRules().getOffset(request.getCreatedAt())
-                    .getTotalSeconds());
+            long ageSeconds = ChronoUnit.SECONDS.between(
+                    request.getCreatedAt(), java.time.LocalDateTime.now());
+            score += 0.0001 * Math.max(0, ageSeconds);
         }
 
         return score;

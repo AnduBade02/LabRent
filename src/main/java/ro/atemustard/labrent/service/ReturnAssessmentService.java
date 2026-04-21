@@ -57,6 +57,9 @@ public class ReturnAssessmentService {
 
         assessment = returnAssessmentRepository.save(assessment);
 
+        // Mark request as fully completed so it no longer shows up in Manage Requests
+        request.setStatus(RequestStatus.COMPLETED);
+
         // Update user reputation
         userService.updateReputationScore(request.getUser().getId(), rating.getReputationImpact());
 

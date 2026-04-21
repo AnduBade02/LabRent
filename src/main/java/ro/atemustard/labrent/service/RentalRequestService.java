@@ -90,6 +90,12 @@ public class RentalRequestService {
                 .collect(Collectors.toList());
     }
 
+    public List<RentalRequestDTO> getAllRequests() {
+        return rentalRequestRepository.findAll().stream()
+                .map(RentalRequestDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
     public List<RentalRequestDTO> getPrioritizedPendingRequests(Long equipmentId) {
         return prioritizationService.getPrioritizedQueue(equipmentId).stream()
                 .map(RentalRequestDTO::fromEntity)

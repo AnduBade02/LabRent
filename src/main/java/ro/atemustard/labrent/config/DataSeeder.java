@@ -161,7 +161,7 @@ public class DataSeeder implements CommandLineRunner {
                 .endDate(LocalDate.now().minusDays(10))
                 .projectDescription("Proiect Sisteme Embedded")
                 .build();
-        req6.setStatus(RequestStatus.RETURNED);
+        req6.setStatus(RequestStatus.COMPLETED);
         req6.setPriorityScore(75.0);
         rentalRequestRepository.save(req6);
 
