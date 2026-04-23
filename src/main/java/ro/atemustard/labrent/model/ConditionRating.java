@@ -1,15 +1,15 @@
 package ro.atemustard.labrent.model;
 
 /**
- * Rating-ul condiției echipamentului la returnare.
- * Completat de operator în formularul de verificare post-returnare.
+ * Condition rating of the equipment at return time.
+ * Filled in by the operator in the post-return verification form.
  *
- * Fiecare rating are un impact direct asupra scorului de reputație al utilizatorului:
- *   EXCELLENT = +5.0   (echipament în stare perfectă)
- *   GOOD      = +2.0   (echipament în stare bună, uzură minimă)
- *   FAIR      =  0.0   (echipament OK, uzură normală)
- *   POOR      = -5.0   (probleme minore, necesită atenție)
- *   DAMAGED   = -15.0  (echipament deteriorat, necesită reparații)
+ * Each rating directly impacts the user's reputation score:
+ *   EXCELLENT = +5.0   (equipment in perfect condition)
+ *   GOOD      = +2.0   (good condition, minimal wear)
+ *   FAIR      =  0.0   (OK condition, normal wear)
+ *   POOR      = -5.0   (minor issues, needs attention)
+ *   DAMAGED   = -15.0  (damaged, needs repairs)
  */
 public enum ConditionRating {
 

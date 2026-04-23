@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LabRent - Laboratory Equipment Rental System</title>
     <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -87,14 +88,41 @@
         <button class="admin-only" onclick="showSection('strategy')">Strategy</button>
     </nav>
 
+
     <main>
         <div id="app-alert"></div>
 
-        <!-- ========== DASHBOARD ========== -->
+        <!-- ========== DASHBOARD (client) ========== -->
         <div id="section-dashboard" class="section active">
             <h2 style="margin-bottom:16px">Dashboard</h2>
             <div class="stats" id="dashboard-stats"></div>
             <div id="dashboard-content"></div>
+        </div>
+
+        <!-- ========== ADMIN DASHBOARD ========== -->
+        <div id="section-admin-dashboard" class="section">
+            <h2 style="margin-bottom:16px">Admin Dashboard</h2>
+            <div class="kpi-grid" id="admin-kpi-cards"></div>
+
+            <div class="chart-grid">
+                <div class="card chart-card">
+                    <h3>Request Status Distribution</h3>
+                    <canvas id="chart-status"></canvas>
+                </div>
+                <div class="card chart-card">
+                    <h3>Top Users by Reputation</h3>
+                    <canvas id="chart-top-users"></canvas>
+                </div>
+                <div class="card chart-card chart-card-wide">
+                    <h3>Equipment Utilization (%)</h3>
+                    <canvas id="chart-utilization"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom:12px">Recent Activity</h3>
+                <div id="activity-feed-list"></div>
+            </div>
         </div>
 
         <!-- ========== EQUIPMENT ========== -->
@@ -103,12 +131,39 @@
                 <h2>Equipment</h2>
                 <button class="btn btn-primary admin-only" onclick="showAddEquipmentModal()">+ Add Equipment</button>
             </div>
+            <div class="filter-bar">
+                <input type="text" id="eq-search" placeholder="Search by name..." oninput="applyEquipmentFilters()">
+                <select id="eq-category-filter" onchange="applyEquipmentFilters()">
+                    <option value="">All categories</option>
+                </select>
+                <select id="eq-availability-filter" onchange="applyEquipmentFilters()">
+                    <option value="">All availability</option>
+                    <option value="available">Available only</option>
+                    <option value="unavailable">Out of stock</option>
+                </select>
+            </div>
             <div class="grid" id="equipment-list"></div>
         </div>
 
         <!-- ========== MY REQUESTS ========== -->
         <div id="section-my-requests" class="section">
             <h2 style="margin-bottom:16px">My Requests</h2>
+            <div class="filter-bar">
+                <select id="my-status-filter" onchange="applyMyRequestsFilters()">
+                    <option value="">All statuses</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="APPROVED">Approved</option>
+                    <option value="REJECTED">Rejected</option>
+                    <option value="RENTED">Rented</option>
+                    <option value="RETURNED">Returned</option>
+                    <option value="COMPLETED">Completed</option>
+                </select>
+                <select id="my-sort" onchange="applyMyRequestsFilters()">
+                    <option value="newest">Newest first</option>
+                    <option value="oldest">Oldest first</option>
+                    <option value="overdue">Overdue first</option>
+                </select>
+            </div>
             <div id="my-requests-list"></div>
         </div>
 
@@ -154,12 +209,32 @@
         <!-- ========== PENDING REQUESTS (Admin) ========== -->
         <div id="section-pending-requests" class="section">
             <h2 style="margin-bottom:16px">Manage Requests</h2>
+            <div class="filter-bar">
+                <input type="text" id="mgr-search" placeholder="Search user or equipment..." oninput="applyManageFilters()">
+                <select id="mgr-status-filter" onchange="applyManageFilters()">
+                    <option value="">All statuses</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="APPROVED">Approved</option>
+                    <option value="RENTED">Rented</option>
+                    <option value="RETURNED">Returned</option>
+                    <option value="COMPLETED">Completed</option>
+                    <option value="REJECTED">Rejected</option>
+                </select>
+            </div>
             <div id="pending-requests-list"></div>
         </div>
 
         <!-- ========== ALL USERS (Admin) ========== -->
         <div id="section-all-users" class="section">
             <h2 style="margin-bottom:16px">All Users</h2>
+            <div class="filter-bar">
+                <input type="text" id="usr-search" placeholder="Search username or email..." oninput="applyUsersFilters()">
+                <select id="usr-type-filter" onchange="applyUsersFilters()">
+                    <option value="">All types</option>
+                    <option value="STUDENT">Student</option>
+                    <option value="NON_STUDENT">Non-Student</option>
+                </select>
+            </div>
             <div id="users-table-container"></div>
         </div>
 
@@ -192,6 +267,12 @@
 <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
     <div class="modal" id="modal-content"></div>
 </div>
+
+<!-- ========== TOAST CONTAINER ========== -->
+<div id="toast-container"></div>
+
+<!-- ========== GLOBAL SPINNER ========== -->
+<div id="global-spinner" aria-hidden="true"></div>
 
 <script src="/js/app.js"></script>
 </body>

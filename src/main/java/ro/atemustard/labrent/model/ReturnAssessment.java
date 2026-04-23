@@ -4,16 +4,16 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 /**
- * Entitatea ReturnAssessment — formularul de verificare post-returnare.
+ * ReturnAssessment entity — the post-return verification form.
  *
- * Când un echipament e returnat, un operator (ADMIN) completează acest formular:
- * - conditionRating: starea echipamentului (EXCELLENT → DAMAGED)
- * - notes: observații textuale
- * - reputationImpact: cât afectează scorul de reputație al userului
+ * When equipment is returned, an operator (ADMIN) fills in this form:
+ * - conditionRating: equipment state (EXCELLENT → DAMAGED)
+ * - notes: free-form observations
+ * - reputationImpact: the user's reputation delta
  *
- * Relație 1:1 cu RentalRequest (fiecare cerere are maxim o evaluare).
+ * 1:1 relationship with RentalRequest (each request has at most one assessment).
  *
- * Design Pattern: Builder — la fel ca RentalRequest.
+ * Design Pattern: Builder — same as RentalRequest.
  */
 @Entity
 @Table(name = "return_assessments")

@@ -4,14 +4,14 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 /**
- * Entitatea Equipment — reprezintă un tip de echipament de laborator.
+ * Equipment entity — a type of laboratory equipment.
  *
- * Un Equipment nu e o unitate fizică individuală, ci un tip de echipament
- * cu totalQuantity unități. availableQuantity scade când se rezervă unități
- * și crește când se returnează.
+ * An Equipment record is not an individual physical unit but an equipment type
+ * with totalQuantity units. availableQuantity decreases on reservation and
+ * increases on return.
  *
- * Exemplu: "Osciloscop Rigol DS1054Z" — totalQuantity=5, availableQuantity=3
- *          (2 sunt închiriate)
+ * Example: "Rigol DS1054Z Oscilloscope" — totalQuantity=5, availableQuantity=3
+ *          (2 are currently rented out)
  */
 @Entity
 @Table(name = "equipment")

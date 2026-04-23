@@ -3,8 +3,8 @@ package ro.atemustard.labrent.model.state;
 import ro.atemustard.labrent.model.EquipmentStatus;
 
 /**
- * Mapează EquipmentStatus (enum persistat în DB) la obiectul State corespunzător.
- * Conectează domeniul persistat de cel comportamental.
+ * Maps EquipmentStatus (enum persisted in the DB) to its corresponding State object.
+ * Bridges the persisted domain to the behavioural one.
  */
 public class EquipmentStateFactory {
 

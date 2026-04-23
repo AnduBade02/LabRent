@@ -8,9 +8,9 @@ import ro.atemustard.labrent.model.User;
 /**
  * Design Pattern: FACTORY
  *
- * Interfața Factory — definește contractul pentru crearea obiectelor RentalRequest.
- * Implementările concrete (Standard, Academic) încapsulează logica de creare
- * pentru diferite tipuri de cereri.
+ * Factory interface — contract for building RentalRequest objects.
+ * Concrete implementations (Standard, Academic) encapsulate the creation logic
+ * for different request types.
  */
 public interface RentalRequestFactory {
 

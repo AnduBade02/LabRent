@@ -1,9 +1,11 @@
 package ro.atemustard.labrent.dto;
 
 import ro.atemustard.labrent.model.RentalRequest;
+import ro.atemustard.labrent.model.RequestStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
 public class RentalRequestDTO {
 
@@ -21,6 +23,10 @@ public class RentalRequestDTO {
     private LocalDate examDate;
     private String justification;
     private LocalDateTime createdAt;
+    private LocalDate returnedAt;
+    private Boolean overdue;
+    private Integer daysOverdue;
+    private Integer daysRemaining;
 
     public RentalRequestDTO() {
     }
@@ -41,6 +47,22 @@ public class RentalRequestDTO {
         dto.setExamDate(request.getExamDate());
         dto.setJustification(request.getJustification());
         dto.setCreatedAt(request.getCreatedAt());
+        dto.setReturnedAt(request.getReturnedAt());
+
+        LocalDate today = LocalDate.now();
+        boolean isRented = request.getStatus() == RequestStatus.RENTED;
+        boolean isOverdue = isRented && request.getEndDate() != null && request.getEndDate().isBefore(today);
+        dto.setOverdue(isOverdue);
+        if (isOverdue) {
+            dto.setDaysOverdue((int) ChronoUnit.DAYS.between(request.getEndDate(), today));
+        } else {
+            dto.setDaysOverdue(0);
+        }
+        if (isRented && request.getEndDate() != null) {
+            dto.setDaysRemaining((int) ChronoUnit.DAYS.between(today, request.getEndDate()));
+        } else {
+            dto.setDaysRemaining(null);
+        }
         return dto;
     }
 
@@ -85,4 +107,16 @@ public class RentalRequestDTO {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDate getReturnedAt() { return returnedAt; }
+    public void setReturnedAt(LocalDate returnedAt) { this.returnedAt = returnedAt; }
+
+    public Boolean getOverdue() { return overdue; }
+    public void setOverdue(Boolean overdue) { this.overdue = overdue; }
+
+    public Integer getDaysOverdue() { return daysOverdue; }
+    public void setDaysOverdue(Integer daysOverdue) { this.daysOverdue = daysOverdue; }
+
+    public Integer getDaysRemaining() { return daysRemaining; }
+    public void setDaysRemaining(Integer daysRemaining) { this.daysRemaining = daysRemaining; }
 }

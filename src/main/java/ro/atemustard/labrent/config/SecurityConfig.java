@@ -13,14 +13,14 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- * Configurare Spring Security cu JWT.
+ * Spring Security configuration with JWT.
  *
- * - Sesiuni stateless (fără cookie-uri de sesiune, doar JWT)
- * - CSRF dezactivat (nu e necesar pentru API stateless)
- * - Endpoint-urile /api/auth/** sunt publice (register, login)
- * - Endpoint-urile /api/admin/** necesită rol ADMIN
- * - Restul endpoint-urilor /api/** necesită autentificare
- * - Resursele statice și paginile Thymeleaf sunt publice (pentru frontend ulterior)
+ * - Stateless sessions (no session cookies, only JWT)
+ * - CSRF disabled (not needed for a stateless API)
+ * - /api/auth/** endpoints are public (register, login)
+ * - /api/admin/** endpoints require the ADMIN role
+ * - All other /api/** endpoints require authentication
+ * - Static resources are public (they serve the SPA frontend)
  */
 @Configuration
 @EnableWebSecurity

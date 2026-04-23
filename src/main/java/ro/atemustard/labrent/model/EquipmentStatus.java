@@ -1,17 +1,17 @@
 package ro.atemustard.labrent.model;
 
 /**
- * Ciclul de viață al unui echipament (State pattern):
+ * Equipment lifecycle (State pattern):
  *
  *   AVAILABLE → RESERVED → RENTED → RETURNED → AVAILABLE
  *                                       ↓
  *                                   IN_SERVICE → AVAILABLE
  *
- * AVAILABLE  = în stoc, disponibil pentru rezervare
- * RESERVED   = aprobat, rezervat pentru un client (echipamentul încă nu a fost ridicat)
- * RENTED     = ridicat de client, nu mai e disponibil
- * RETURNED   = returnat, în așteptare pentru verificare de către operator
- * IN_SERVICE = la service/reparații (dacă a fost returnat cu defecțiuni)
+ * AVAILABLE  = in stock, available for reservation
+ * RESERVED   = approved, reserved for a client (not yet picked up)
+ * RENTED     = picked up by the client, no longer available
+ * RETURNED   = returned, awaiting operator verification
+ * IN_SERVICE = at service/repairs (returned with defects)
  */
 public enum EquipmentStatus {
     AVAILABLE,

@@ -1,13 +1,13 @@
 package ro.atemustard.labrent.model;
 
 /**
- * Rolurile din sistem — determină ce acțiuni poate face un utilizator.
+ * System roles — determine what actions a user can take.
  *
- * USER  = Client (student sau non-student) — poate crea cereri, vizualiza propriile închirieri
- * ADMIN = Operator / Staff — gestionează cereri, echipamente, stoc, verificări returnare
+ * USER  = Client (student or non-student) — can create requests, view own rentals
+ * ADMIN = Operator / Staff — manages requests, equipment, stock, return checks
  *
- * Distincția student/non-student se face prin câmpul UserType de pe entitatea User,
- * NU prin roluri separate. Rolul controlează accesul; UserType influențează prioritizarea.
+ * The student/non-student distinction is captured on the User entity via UserType,
+ * NOT via separate roles. Role controls access; UserType influences prioritization.
  */
 public enum Role {
     USER,

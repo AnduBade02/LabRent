@@ -9,6 +9,7 @@ import ro.atemustard.labrent.service.RentalRequestService;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/rental-requests")
@@ -29,6 +30,11 @@ public class RentalRequestController {
     @GetMapping("/my")
     public ResponseEntity<List<RentalRequestDTO>> getMyRequests(Principal principal) {
         return ResponseEntity.ok(rentalRequestService.getUserRequests(principal.getName()));
+    }
+
+    @GetMapping("/my-queue-positions")
+    public ResponseEntity<Map<Long, Integer>> getMyQueuePositions(Principal principal) {
+        return ResponseEntity.ok(rentalRequestService.getQueuePositionsForUser(principal.getName()));
     }
 
     @GetMapping("/pending")

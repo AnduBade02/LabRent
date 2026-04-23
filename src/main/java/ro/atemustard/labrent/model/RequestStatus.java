@@ -1,17 +1,18 @@
 package ro.atemustard.labrent.model;
 
 /**
- * Stările unei cereri de închiriere:
+ * States of a rental request:
  *
- *   PENDING → APPROVED → RENTED → RETURNED
+ *   PENDING → APPROVED → RENTED → RETURNED → COMPLETED
  *      ↓
  *   REJECTED
  *
- * PENDING  = cererea a fost trimisă, așteaptă aprobarea adminului
- * APPROVED = adminul a aprobat, echipamentul e rezervat
- * REJECTED = adminul a respins cererea
- * RENTED   = echipamentul a fost predat clientului
- * RETURNED = clientul a returnat echipamentul
+ * PENDING   = request submitted, awaiting admin approval
+ * APPROVED  = admin approved, equipment is reserved
+ * REJECTED  = admin rejected the request
+ * RENTED    = equipment handed over to the client
+ * RETURNED  = client returned the equipment, awaiting assessment
+ * COMPLETED = assessment done, reputation updated, stock released
  */
 public enum RequestStatus {
     PENDING,

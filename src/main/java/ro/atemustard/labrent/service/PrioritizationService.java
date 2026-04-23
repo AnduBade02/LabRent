@@ -13,10 +13,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Service care coordonează prioritizarea cererilor.
+ * Service that coordinates rental request prioritization.
  *
- * Folosește Strategy pattern: deține o referință la strategia activă și o poate
- * schimba la runtime (admin poate comuta între "weightedScoring" și "fifo").
+ * Uses the Strategy pattern: holds a reference to the active strategy and can
+ * switch it at runtime (admin can toggle between "weightedScoring" and "fifo").
+ * Also exposes recalculation hooks so priority scores stay fresh when the
+ * strategy changes, when competition for an equipment changes, or when a
+ * user's reputation changes.
  */
 @Service
 public class PrioritizationService {
@@ -58,6 +61,32 @@ public class PrioritizationService {
     public List<RentalRequest> getPrioritizedQueue(Long equipmentId) {
         return rentalRequestRepository.findByEquipmentIdAndStatusOrderByPriorityScoreDesc(
                 equipmentId, RequestStatus.PENDING);
+    }
+
+    public void recalculateAllPending() {
+        List<RentalRequest> pending = rentalRequestRepository.findByStatus(RequestStatus.PENDING);
+        for (RentalRequest r : pending) {
+            r.setPriorityScore(calculatePriority(r));
+        }
+        rentalRequestRepository.saveAll(pending);
+    }
+
+    public void recalculateForEquipment(Long equipmentId) {
+        List<RentalRequest> pending = rentalRequestRepository
+                .findByEquipmentIdAndStatus(equipmentId, RequestStatus.PENDING);
+        for (RentalRequest r : pending) {
+            r.setPriorityScore(calculatePriority(r));
+        }
+        rentalRequestRepository.saveAll(pending);
+    }
+
+    public void recalculateForUser(Long userId) {
+        List<RentalRequest> pending = rentalRequestRepository
+                .findByUserIdAndStatus(userId, RequestStatus.PENDING);
+        for (RentalRequest r : pending) {
+            r.setPriorityScore(calculatePriority(r));
+        }
+        rentalRequestRepository.saveAll(pending);
     }
 
     private PrioritizationContext buildContext(RentalRequest request) {

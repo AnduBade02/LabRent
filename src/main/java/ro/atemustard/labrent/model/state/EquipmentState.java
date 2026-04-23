@@ -6,18 +6,18 @@ import ro.atemustard.labrent.model.Equipment;
 /**
  * Design Pattern: STATE
  *
- * Interfața definește toate tranzițiile posibile ale unui echipament.
- * Fiecare stare concretă implementează doar tranzițiile valide;
- * cele invalide aruncă InvalidOperationException (comportament default).
+ * Interface that defines all possible equipment transitions.
+ * Each concrete state implements only the valid transitions;
+ * invalid ones throw InvalidOperationException (default behaviour).
  *
- * Tranziții valide:
+ * Valid transitions:
  *   AVAILABLE  → reserve()      → RESERVED
  *   RESERVED   → rent()         → RENTED
  *   RESERVED   → makeAvailable()→ AVAILABLE  (cancel)
  *   RENTED     → returnEquip()  → RETURNED
- *   RETURNED   → makeAvailable()→ AVAILABLE  (stare bună)
- *   RETURNED   → sendToService()→ IN_SERVICE (deteriorat)
- *   IN_SERVICE → makeAvailable()→ AVAILABLE  (reparat)
+ *   RETURNED   → makeAvailable()→ AVAILABLE  (good condition)
+ *   RETURNED   → sendToService()→ IN_SERVICE (damaged)
+ *   IN_SERVICE → makeAvailable()→ AVAILABLE  (repaired)
  */
 public interface EquipmentState {
 

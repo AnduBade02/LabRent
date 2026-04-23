@@ -11,10 +11,10 @@ import ro.atemustard.labrent.repository.UserRepository;
 import java.util.List;
 
 /**
- * Implementare UserDetailsService — conectează Spring Security la baza noastră de date.
+ * UserDetailsService implementation — bridges Spring Security to our DB.
  *
- * Spring Security apelează loadUserByUsername() la autentificare pentru a obține
- * detaliile utilizatorului (username, password hash, roluri).
+ * Spring Security calls loadUserByUsername() during authentication to obtain
+ * user details (username, password hash, roles).
  */
 @Service
 public class CustomUserDetailsService implements UserDetailsService {

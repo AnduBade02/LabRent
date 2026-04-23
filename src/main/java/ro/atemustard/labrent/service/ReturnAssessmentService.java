@@ -9,28 +9,34 @@ import ro.atemustard.labrent.exception.ResourceNotFoundException;
 import ro.atemustard.labrent.model.*;
 import ro.atemustard.labrent.repository.ReturnAssessmentRepository;
 
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class ReturnAssessmentService {
 
+    private static final double MAX_OVERDUE_PENALTY = 10.0;
+
     private final ReturnAssessmentRepository returnAssessmentRepository;
     private final RentalRequestService rentalRequestService;
     private final UserService userService;
     private final EquipmentService equipmentService;
     private final NotificationService notificationService;
+    private final PrioritizationService prioritizationService;
 
     public ReturnAssessmentService(ReturnAssessmentRepository returnAssessmentRepository,
                                     RentalRequestService rentalRequestService,
                                     UserService userService,
                                     EquipmentService equipmentService,
-                                    NotificationService notificationService) {
+                                    NotificationService notificationService,
+                                    PrioritizationService prioritizationService) {
         this.returnAssessmentRepository = returnAssessmentRepository;
         this.rentalRequestService = rentalRequestService;
         this.userService = userService;
         this.equipmentService = equipmentService;
         this.notificationService = notificationService;
+        this.prioritizationService = prioritizationService;
     }
 
     @Transactional
@@ -60,8 +66,13 @@ public class ReturnAssessmentService {
         // Mark request as fully completed so it no longer shows up in Manage Requests
         request.setStatus(RequestStatus.COMPLETED);
 
-        // Update user reputation
-        userService.updateReputationScore(request.getUser().getId(), rating.getReputationImpact());
+        // Update user reputation (rating impact + overdue penalty, if any)
+        double totalImpact = rating.getReputationImpact() + calculateOverduePenalty(request);
+        userService.updateReputationScore(request.getUser().getId(), totalImpact);
+
+        // Reputation changed — rescore this user's PENDING requests so future
+        // prioritization reflects the updated trust score.
+        prioritizationService.recalculateForUser(request.getUser().getId());
 
         // Release equipment unit back to available
         equipmentService.releaseUnit(request.getEquipment().getId());
@@ -70,6 +81,17 @@ public class ReturnAssessmentService {
         notificationService.notifyAssessmentCompleted(assessment);
 
         return ReturnAssessmentDTO.fromEntity(assessment);
+    }
+
+    private double calculateOverduePenalty(RentalRequest request) {
+        if (request.getReturnedAt() == null || request.getEndDate() == null) {
+            return 0.0;
+        }
+        if (!request.getReturnedAt().isAfter(request.getEndDate())) {
+            return 0.0;
+        }
+        long daysLate = ChronoUnit.DAYS.between(request.getEndDate(), request.getReturnedAt());
+        return -Math.min(MAX_OVERDUE_PENALTY, daysLate);
     }
 
     public ReturnAssessmentDTO getAssessmentByRequestId(Long requestId) {

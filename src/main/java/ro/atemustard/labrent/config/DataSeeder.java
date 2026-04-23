@@ -11,8 +11,8 @@ import ro.atemustard.labrent.repository.*;
 import java.time.LocalDate;
 
 /**
- * Populează baza de date cu date de test la pornirea aplicației.
- * Rulează doar dacă tabelul users e gol (prima pornire).
+ * Seeds the database with test data on application startup.
+ * Runs only when the users table is empty (first start).
  */
 @Component
 public class DataSeeder implements CommandLineRunner {
@@ -65,25 +65,25 @@ public class DataSeeder implements CommandLineRunner {
         student3 = userRepository.save(student3);
 
         // --- Equipment ---
-        Equipment osciloscop = new Equipment("Osciloscop Rigol DS1054Z", "Osciloscop digital 4 canale, 50MHz", "Oscilloscope", 5);
+        Equipment osciloscop = new Equipment("Rigol DS1054Z Oscilloscope", "Digital oscilloscope, 4 channels, 50MHz", "Oscilloscope", 5);
         osciloscop = equipmentRepository.save(osciloscop);
 
-        Equipment multimetru = new Equipment("Multimetru Fluke 117", "Multimetru digital True-RMS", "Multimeter", 10);
+        Equipment multimetru = new Equipment("Fluke 117 Multimeter", "Digital True-RMS multimeter", "Multimeter", 10);
         multimetru = equipmentRepository.save(multimetru);
 
-        Equipment arduino = new Equipment("Arduino Uno R3", "Placa de dezvoltare microcontroller ATmega328P", "Microcontroller", 15);
+        Equipment arduino = new Equipment("Arduino Uno R3", "Development board with ATmega328P microcontroller", "Microcontroller", 15);
         arduino = equipmentRepository.save(arduino);
 
         Equipment raspberryPi = new Equipment("Raspberry Pi 4 Model B", "Single-board computer, 4GB RAM", "Single-Board Computer", 8);
         raspberryPi = equipmentRepository.save(raspberryPi);
 
-        Equipment generator = new Equipment("Generator de Semnal Rigol DG1022", "Generator de semnal arbitrar 2 canale, 25MHz", "Signal Generator", 3);
+        Equipment generator = new Equipment("Rigol DG1022 Signal Generator", "Arbitrary signal generator, 2 channels, 25MHz", "Signal Generator", 3);
         generator = equipmentRepository.save(generator);
 
-        Equipment sursa = new Equipment("Sursa de Alimentare RXN-305D", "Sursa reglabila 0-30V, 0-5A", "Power Supply", 6);
+        Equipment sursa = new Equipment("RXN-305D Power Supply", "Adjustable power supply 0-30V, 0-5A", "Power Supply", 6);
         sursa = equipmentRepository.save(sursa);
 
-        Equipment analizor = new Equipment("Analizor Logic Saleae Logic 8", "Analizor logic 8 canale, 25MHz", "Logic Analyzer", 4);
+        Equipment analizor = new Equipment("Saleae Logic 8 Analyzer", "Logic analyzer, 8 channels, 25MHz", "Logic Analyzer", 4);
         analizor = equipmentRepository.save(analizor);
 
         // --- Rental Requests in various states ---
@@ -94,7 +94,7 @@ public class DataSeeder implements CommandLineRunner {
                 .equipment(osciloscop)
                 .startDate(LocalDate.now().plusDays(2))
                 .endDate(LocalDate.now().plusDays(14))
-                .projectDescription("Proiect laborator Electronică Analogică")
+                .projectDescription("Analog Electronics lab project")
                 .build();
         req1.setPriorityScore(65.0);
         rentalRequestRepository.save(req1);
@@ -105,10 +105,10 @@ public class DataSeeder implements CommandLineRunner {
                 .equipment(osciloscop)
                 .startDate(LocalDate.now().plusDays(1))
                 .endDate(LocalDate.now().plusDays(7))
-                .projectDescription("Pregătire examen Circuite Electrice")
+                .projectDescription("Preparation for Electric Circuits exam")
                 .isForExam(true)
                 .examDate(LocalDate.now().plusDays(8))
-                .justification("Examen practic, am nevoie de osciloscop pentru exerciții")
+                .justification("Practical exam — need the oscilloscope for exercises")
                 .build();
         req2.setPriorityScore(92.0);
         rentalRequestRepository.save(req2);
@@ -119,7 +119,7 @@ public class DataSeeder implements CommandLineRunner {
                 .equipment(arduino)
                 .startDate(LocalDate.now())
                 .endDate(LocalDate.now().plusDays(21))
-                .projectDescription("Proiect IoT - Sistem de monitorizare temperatură")
+                .projectDescription("IoT project — temperature monitoring system")
                 .build();
         req3.setStatus(RequestStatus.APPROVED);
         req3.setPriorityScore(70.0);
@@ -133,7 +133,7 @@ public class DataSeeder implements CommandLineRunner {
                 .equipment(multimetru)
                 .startDate(LocalDate.now().minusDays(5))
                 .endDate(LocalDate.now().plusDays(10))
-                .projectDescription("Verificări instalație electrică")
+                .projectDescription("Electrical installation checks")
                 .build();
         req4.setStatus(RequestStatus.RENTED);
         req4.setPriorityScore(55.0);
@@ -147,7 +147,7 @@ public class DataSeeder implements CommandLineRunner {
                 .equipment(generator)
                 .startDate(LocalDate.now().minusDays(14))
                 .endDate(LocalDate.now().minusDays(1))
-                .projectDescription("Laborator Telecomunicații")
+                .projectDescription("Telecommunications lab")
                 .build();
         req5.setStatus(RequestStatus.RETURNED);
         req5.setPriorityScore(60.0);
@@ -159,7 +159,7 @@ public class DataSeeder implements CommandLineRunner {
                 .equipment(raspberryPi)
                 .startDate(LocalDate.now().minusDays(30))
                 .endDate(LocalDate.now().minusDays(10))
-                .projectDescription("Proiect Sisteme Embedded")
+                .projectDescription("Embedded Systems project")
                 .build();
         req6.setStatus(RequestStatus.COMPLETED);
         req6.setPriorityScore(75.0);
@@ -169,7 +169,7 @@ public class DataSeeder implements CommandLineRunner {
                 .rentalRequest(req6)
                 .operator(admin)
                 .conditionRating(ConditionRating.EXCELLENT)
-                .notes("Echipament returnat în stare perfectă, toate accesoriile prezente.")
+                .notes("Equipment returned in perfect condition, all accessories present.")
                 .build();
         returnAssessmentRepository.save(assessment1);
 
@@ -179,7 +179,7 @@ public class DataSeeder implements CommandLineRunner {
                 .equipment(sursa)
                 .startDate(LocalDate.now().minusDays(3))
                 .endDate(LocalDate.now().plusDays(7))
-                .projectDescription("Proiect personal")
+                .projectDescription("Personal project")
                 .build();
         req7.setStatus(RequestStatus.REJECTED);
         req7.setPriorityScore(35.0);
@@ -191,7 +191,7 @@ public class DataSeeder implements CommandLineRunner {
                 .equipment(analizor)
                 .startDate(LocalDate.now().plusDays(3))
                 .endDate(LocalDate.now().plusDays(17))
-                .projectDescription("Debugging protocol SPI pe placa custom")
+                .projectDescription("SPI protocol debugging on custom board")
                 .build();
         req8.setPriorityScore(50.0);
         rentalRequestRepository.save(req8);

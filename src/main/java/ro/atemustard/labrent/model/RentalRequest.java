@@ -5,14 +5,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * Entitatea RentalRequest — o cerere de închiriere.
+ * RentalRequest entity — a rental request.
  *
- * Leagă un User de un Equipment. Include câmpuri pentru:
- * - Urgență academică (isForExam, examDate, justification) — doar pentru studenți
- * - Scor de prioritate (calculat de PrioritizationService)
+ * Links a User to an Equipment. Includes fields for:
+ * - Academic urgency (isForExam, examDate, justification) — students only
+ * - Priority score (computed by PrioritizationService)
+ * - Actual return date (returnedAt) — used for overdue penalty calculation
  *
- * Design Pattern: Builder — clasă internă Builder pentru construcție fluentă,
- * deoarece entitatea are multe câmpuri opționale.
+ * Design Pattern: Builder — inner Builder class for fluent construction,
+ * since the entity has many optional fields.
  */
 @Entity
 @Table(name = "rental_requests")
@@ -58,6 +59,9 @@ public class RentalRequest {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column
+    private LocalDate returnedAt;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -84,10 +88,10 @@ public class RentalRequest {
     }
 
     /**
-     * Builder pattern — permite construcția pas cu pas a unui RentalRequest
-     * cu multe câmpuri opționale, fără a avea un constructor cu 10+ parametri.
+     * Builder pattern — allows step-by-step construction of a RentalRequest
+     * with many optional fields, avoiding a constructor with 10+ parameters.
      *
-     * Utilizare:
+     * Usage:
      *   RentalRequest request = RentalRequest.builder()
      *       .user(user)
      *       .equipment(equipment)
@@ -251,5 +255,13 @@ public class RentalRequest {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public LocalDate getReturnedAt() {
+        return returnedAt;
+    }
+
+    public void setReturnedAt(LocalDate returnedAt) {
+        this.returnedAt = returnedAt;
     }
 }

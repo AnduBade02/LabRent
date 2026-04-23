@@ -6,13 +6,13 @@ import ro.atemustard.labrent.model.ReturnAssessment;
 /**
  * Design Pattern: OBSERVER
  *
- * Interfața Observer — ascultătorii implementează aceste metode pentru a fi
- * notificați despre evenimente din ciclul de viață al cererilor de închiriere.
+ * Observer interface — listeners implement these methods to be notified about
+ * rental request lifecycle events.
  *
- * NotificationService (subiectul) ține o listă de listeneri și îi notifică.
+ * NotificationService (the subject) keeps a listener list and notifies them.
  *
- * Notă: Spring oferă și un mecanism nativ (@EventListener + ApplicationEventPublisher)
- * care funcționează la fel, dar varianta manuală face pattern-ul mai vizibil.
+ * Note: Spring ships a native mechanism (@EventListener + ApplicationEventPublisher)
+ * that does the same thing, but the manual variant keeps the pattern explicit.
  */
 public interface RentalEventListener {
 

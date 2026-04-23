@@ -7,8 +7,8 @@ import ro.atemustard.labrent.model.RentalRequest;
 import ro.atemustard.labrent.model.User;
 
 /**
- * Factory pentru cereri cu urgență academică (studenți cu examen).
- * Setează câmpurile isForExam, examDate și justification.
+ * Factory for requests with academic urgency (students with an exam).
+ * Sets the isForExam, examDate and justification fields.
  */
 @Component("academicFactory")
 public class AcademicRentalRequestFactory implements RentalRequestFactory {

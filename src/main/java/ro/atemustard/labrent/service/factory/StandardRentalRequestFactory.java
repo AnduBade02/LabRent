@@ -7,7 +7,7 @@ import ro.atemustard.labrent.model.RentalRequest;
 import ro.atemustard.labrent.model.User;
 
 /**
- * Factory pentru cereri de închiriere standard (fără urgență academică).
+ * Factory for standard rental requests (without academic urgency).
  */
 @Component("standardFactory")
 public class StandardRentalRequestFactory implements RentalRequestFactory {

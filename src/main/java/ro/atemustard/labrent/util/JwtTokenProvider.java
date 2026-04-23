@@ -11,12 +11,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 /**
- * Utilitar JWT — generează, validează și parsează token-uri JWT.
+ * JWT utility — generates, validates, and parses JWT tokens.
  *
- * JWT (JSON Web Token) e un standard pentru autentificare stateless:
- * - La login, serverul generează un token semnat cu o cheie secretă
- * - Clientul trimite token-ul în header-ul Authorization la fiecare request
- * - Serverul validează semnătura fără a consulta baza de date
+ * JWT (JSON Web Token) is a standard for stateless authentication:
+ * - On login, the server generates a token signed with a secret key
+ * - The client sends the token in the Authorization header on each request
+ * - The server validates the signature without hitting the database
  */
 @Component
 public class JwtTokenProvider {

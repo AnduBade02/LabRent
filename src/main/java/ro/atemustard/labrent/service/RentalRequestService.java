@@ -10,15 +10,17 @@ import ro.atemustard.labrent.model.*;
 import ro.atemustard.labrent.repository.RentalRequestRepository;
 import ro.atemustard.labrent.service.factory.RentalRequestFactory;
 
+import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Service central pentru cererile de închiriere.
+ * Central service for rental requests.
  *
- * Coordonează: Factory (creare), PrioritizationService (scoring),
- * EquipmentService (stoc), NotificationService (Observer notifications).
+ * Coordinates: Factory (creation), PrioritizationService (scoring),
+ * EquipmentService (stock), NotificationService (Observer notifications).
  */
 @Service
 public class RentalRequestService {
@@ -71,6 +73,11 @@ public class RentalRequestService {
         request.setPriorityScore(priority);
         request = rentalRequestRepository.save(request);
 
+        // A new competitor means existing PENDING requests for this equipment
+        // have a higher competingRequestCount — rescore them so the queue
+        // reflects the new competition.
+        prioritizationService.recalculateForEquipment(equipment.getId());
+
         // Notify observers
         notificationService.notifyRequestCreated(request);
 
@@ -100,6 +107,32 @@ public class RentalRequestService {
         return prioritizationService.getPrioritizedQueue(equipmentId).stream()
                 .map(RentalRequestDTO::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * For each of the caller's PENDING requests, returns its 1-based position
+     * in the priority queue for its equipment. Lets the client dashboard show
+     * "Position X of Y" without N+1 calls.
+     */
+    public Map<Long, Integer> getQueuePositionsForUser(String username) {
+        User user = userService.findEntityByUsername(username);
+        List<RentalRequest> myPending = rentalRequestRepository
+                .findByUserIdAndStatus(user.getId(), RequestStatus.PENDING);
+
+        Map<Long, Integer> positions = new HashMap<>();
+        for (RentalRequest req : myPending) {
+            List<RentalRequest> queue = prioritizationService
+                    .getPrioritizedQueue(req.getEquipment().getId());
+            int position = 0;
+            for (int i = 0; i < queue.size(); i++) {
+                if (queue.get(i).getId().equals(req.getId())) {
+                    position = i + 1;
+                    break;
+                }
+            }
+            positions.put(req.getId(), position);
+        }
+        return positions;
     }
 
     @Transactional
@@ -143,6 +176,7 @@ public class RentalRequestService {
         validateStatus(request, RequestStatus.RENTED, "mark as returned");
 
         request.setStatus(RequestStatus.RETURNED);
+        request.setReturnedAt(LocalDate.now());
         request = rentalRequestRepository.save(request);
 
         notificationService.notifyEquipmentReturned(request);

@@ -4,14 +4,14 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 /**
- * Entitatea User — reprezintă un utilizator al sistemului LabRent.
+ * User entity — a LabRent system user.
  *
- * Câmpuri cheie:
- * - role: USER sau ADMIN (controlează accesul)
- * - userType: STUDENT sau NON_STUDENT (influențează prioritizarea cererilor)
- * - reputationScore: scor de reputație (afectat de calitatea returnărilor, folosit în prioritizare)
+ * Key fields:
+ * - role: USER or ADMIN (controls access)
+ * - userType: STUDENT or NON_STUDENT (influences request prioritization)
+ * - reputationScore: reputation score (affected by return quality, used in prioritization)
  *
- * Tabelul se numește "users" deoarece "user" e cuvânt rezervat în SQL.
+ * The table is named "users" because "user" is reserved in SQL.
  */
 @Entity
 @Table(name = "users")

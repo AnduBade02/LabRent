@@ -8,11 +8,11 @@ import ro.atemustard.labrent.service.observer.RentalEventListener;
 import java.util.List;
 
 /**
- * Subiectul din Observer pattern — deține lista de listeneri și îi notifică.
+ * Subject of the Observer pattern — holds the listener list and notifies them.
  *
- * Spring injectează automat toți bean-urile care implementează RentalEventListener
- * (în cazul nostru, EmailNotificationListener). Dacă adăugăm un SlackNotificationListener
- * în viitor, va fi automat inclus fără a modifica acest service.
+ * Spring auto-injects every bean that implements RentalEventListener
+ * (currently EmailNotificationListener). Adding a SlackNotificationListener
+ * later requires no changes to this service.
  */
 @Service
 public class NotificationService {

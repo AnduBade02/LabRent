@@ -11,8 +11,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Handler global de excepții — interceptează excepțiile din toate controller-ele
- * și returnează răspunsuri JSON consistente cu ErrorResponseDTO.
+ * Global exception handler — intercepts exceptions from all controllers
+ * and returns consistent JSON responses using ErrorResponseDTO.
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {

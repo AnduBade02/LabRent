@@ -9,10 +9,10 @@ import ro.atemustard.labrent.model.RentalRequest;
 import ro.atemustard.labrent.model.ReturnAssessment;
 
 /**
- * Observer concret — trimite notificări email la evenimentele de închiriere.
+ * Concrete observer — sends email notifications on rental events.
  *
- * În modul development (când MAIL_USERNAME nu e configurat), doar loghează
- * mesajul fără a trimite email real.
+ * In development mode (when MAIL_USERNAME is not configured) it only logs
+ * the message instead of sending a real email.
  */
 @Component
 public class EmailNotificationListener implements RentalEventListener {

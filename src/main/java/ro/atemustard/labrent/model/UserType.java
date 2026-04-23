@@ -1,11 +1,11 @@
 package ro.atemustard.labrent.model;
 
 /**
- * Tipul utilizatorului — setat la înregistrare.
+ * User type — chosen at registration.
  *
- * Folosit de sistemul de prioritizare inteligentă:
- * - STUDENT poate adăuga urgență academică (examen, dată examen)
- * - NON_STUDENT nu beneficiază de bonusul academic
+ * Used by the intelligent prioritization system:
+ * - STUDENT can add academic urgency (exam flag, exam date)
+ * - NON_STUDENT does not benefit from the academic bonus
  */
 public enum UserType {
     STUDENT,

@@ -6,10 +6,10 @@ import ro.atemustard.labrent.model.RentalRequest;
 import java.time.ZoneOffset;
 
 /**
- * Strategie FIFO (First In, First Out) — pentru comparație cu strategia ponderată.
+ * FIFO (First In, First Out) strategy — for comparison with the weighted one.
  *
- * Scorul e bazat exclusiv pe momentul creării cererii:
- * cererile mai vechi primesc scor mai mare (sunt procesate primele).
+ * The score is based purely on the request creation timestamp:
+ * older requests get a higher score (processed first).
  */
 @Component("fifo")
 public class FIFOStrategy implements PrioritizationStrategy {

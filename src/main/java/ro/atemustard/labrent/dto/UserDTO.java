@@ -5,7 +5,7 @@ import ro.atemustard.labrent.model.User;
 import java.time.LocalDateTime;
 
 /**
- * DTO de răspuns pentru User — nu conține parola.
+ * Response DTO for User — does not include the password.
  */
 public class UserDTO {
 

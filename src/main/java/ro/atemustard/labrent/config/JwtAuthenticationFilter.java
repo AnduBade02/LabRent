@@ -16,15 +16,15 @@ import ro.atemustard.labrent.util.JwtTokenProvider;
 import java.io.IOException;
 
 /**
- * Filtru JWT — se execută o dată per request, înainte de controller.
+ * JWT filter — runs once per request, before the controller.
  *
- * 1. Citește header-ul Authorization
- * 2. Extrage token-ul Bearer
- * 3. Validează token-ul
- * 4. Setează autentificarea în SecurityContext
+ * 1. Reads the Authorization header
+ * 2. Extracts the Bearer token
+ * 3. Validates the token
+ * 4. Sets the authentication in the SecurityContext
  *
- * Dacă token-ul lipsește sau e invalid, request-ul continuă neautentificat
- * (Spring Security va decide dacă endpoint-ul permite acces anonim sau nu).
+ * If the token is missing or invalid, the request proceeds unauthenticated
+ * (Spring Security then decides whether the endpoint allows anonymous access).
  */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {

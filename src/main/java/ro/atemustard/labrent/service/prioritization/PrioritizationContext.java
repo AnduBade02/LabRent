@@ -3,8 +3,8 @@ package ro.atemustard.labrent.service.prioritization;
 import java.time.LocalDate;
 
 /**
- * Date pre-calculate necesare strategiilor de prioritizare.
- * Evită ca fiecare strategie să facă propriile query-uri la baza de date.
+ * Pre-computed data required by prioritization strategies.
+ * Avoids each strategy issuing its own DB queries.
  */
 public class PrioritizationContext {
 

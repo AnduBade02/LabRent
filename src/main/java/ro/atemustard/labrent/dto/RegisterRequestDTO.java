@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 /**
- * DTO pentru cererea de înregistrare — primită de la client la register.
+ * Register request DTO — received from the client on sign-up.
  */
 public class RegisterRequestDTO {
 

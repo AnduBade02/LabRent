@@ -7,16 +7,16 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
 /**
- * Strategie de prioritizare cu scor ponderat.
+ * Weighted-scoring prioritization strategy.
  *
- * Factori:
- * - Reputație:        0–40 puncte (reputationScore / 100 * 20, max 40)
- * - Cereri active:    -5 puncte per cerere activă (descurajează acapararea)
- * - Bonus student:    +5 puncte dacă e student
- * - Urgență examen:   0–30 puncte (cu cât examenul e mai aproape, cu atât scor mai mare)
- * - Cerere timpurie:  tiebreaker mic bazat pe timestamp (prima cerere câștigă la egalitate)
+ * Factors:
+ * - Reputation:       0–40 points (reputationScore / 100 * 20, capped at 40)
+ * - Active requests:  -5 points per active request (discourages hoarding)
+ * - Student bonus:    +5 points if the user is a student
+ * - Exam urgency:     0–30 points (the closer the exam, the higher the score)
+ * - Earlier request:  small timestamp-based tiebreaker (older wins on ties)
  *
- * Scor final = 50 (bază) + reputație + active penalty + student bonus + exam urgency
+ * Final score = 50 (base) + reputation + active penalty + student bonus + exam urgency
  */
 @Component("weightedScoring")
 public class WeightedScoringStrategy implements PrioritizationStrategy {

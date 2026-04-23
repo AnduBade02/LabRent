@@ -7,6 +7,7 @@ import ro.atemustard.labrent.exception.InvalidOperationException;
 import ro.atemustard.labrent.exception.ResourceNotFoundException;
 import ro.atemustard.labrent.model.Equipment;
 import ro.atemustard.labrent.model.EquipmentStatus;
+import ro.atemustard.labrent.model.state.EquipmentStateFactory;
 import ro.atemustard.labrent.repository.EquipmentRepository;
 
 import java.util.List;
@@ -82,13 +83,27 @@ public class EquipmentService {
             throw new InvalidOperationException("No available units for equipment: " + equipment.getName());
         }
         equipment.setAvailableQuantity(equipment.getAvailableQuantity() - 1);
+        // State pattern: when the last unit leaves the pool, transition the
+        // equipment's global status through the State machine so the
+        // transition rules live in one place.
+        if (equipment.getAvailableQuantity() == 0
+                && equipment.getStatus() == EquipmentStatus.AVAILABLE) {
+            EquipmentStateFactory.fromStatus(equipment.getStatus()).reserve(equipment);
+        }
         equipmentRepository.save(equipment);
     }
 
     public void releaseUnit(Long equipmentId) {
         Equipment equipment = findEntityById(equipmentId);
+        int before = equipment.getAvailableQuantity();
         equipment.setAvailableQuantity(
-                Math.min(equipment.getTotalQuantity(), equipment.getAvailableQuantity() + 1));
+                Math.min(equipment.getTotalQuantity(), before + 1));
+        // State pattern: first unit returning to the pool flips the global
+        // status back to AVAILABLE via the State machine.
+        if (before == 0 && equipment.getAvailableQuantity() > 0
+                && equipment.getStatus() != EquipmentStatus.AVAILABLE) {
+            EquipmentStateFactory.fromStatus(equipment.getStatus()).makeAvailable(equipment);
+        }
         equipmentRepository.save(equipment);
     }
 
