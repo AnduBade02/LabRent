@@ -2,6 +2,7 @@ package ro.atemustard.labrent.service;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ro.atemustard.labrent.model.RentalRequest;
 import ro.atemustard.labrent.model.RequestStatus;
 import ro.atemustard.labrent.model.UserType;
@@ -63,6 +64,7 @@ public class PrioritizationService {
                 equipmentId, RequestStatus.PENDING);
     }
 
+    @Transactional
     public void recalculateAllPending() {
         List<RentalRequest> pending = rentalRequestRepository.findByStatus(RequestStatus.PENDING);
         for (RentalRequest r : pending) {
@@ -71,6 +73,7 @@ public class PrioritizationService {
         rentalRequestRepository.saveAll(pending);
     }
 
+    @Transactional
     public void recalculateForEquipment(Long equipmentId) {
         List<RentalRequest> pending = rentalRequestRepository
                 .findByEquipmentIdAndStatus(equipmentId, RequestStatus.PENDING);
@@ -80,6 +83,7 @@ public class PrioritizationService {
         rentalRequestRepository.saveAll(pending);
     }
 
+    @Transactional
     public void recalculateForUser(Long userId) {
         List<RentalRequest> pending = rentalRequestRepository
                 .findByUserIdAndStatus(userId, RequestStatus.PENDING);
