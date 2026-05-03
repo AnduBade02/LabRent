@@ -54,10 +54,13 @@ public class AdminDashboardService {
                         && r.getEndDate() != null
                         && r.getEndDate().isBefore(today))
                 .count();
+        long returned = allRequests.stream()
+                .filter(r -> r.getStatus() == RequestStatus.RETURNED).count();
 
         dto.setPendingCount(pending);
         dto.setActiveRentalsCount(active);
         dto.setOverdueCount(overdue);
+        dto.setReturnedCount(returned);
         dto.setTotalEquipment((long) allEquipment.size());
 
         int totalUnits = allEquipment.stream()

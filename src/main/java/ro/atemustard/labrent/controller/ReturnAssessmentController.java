@@ -2,6 +2,7 @@ package ro.atemustard.labrent.controller;
 
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ro.atemustard.labrent.dto.ReturnAssessmentCreateDTO;
 import ro.atemustard.labrent.dto.ReturnAssessmentDTO;
@@ -21,6 +22,7 @@ public class ReturnAssessmentController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ReturnAssessmentDTO> submitAssessment(
             @Valid @RequestBody ReturnAssessmentCreateDTO dto, Principal principal) {
         return ResponseEntity.ok(returnAssessmentService.submitAssessment(dto, principal.getName()));

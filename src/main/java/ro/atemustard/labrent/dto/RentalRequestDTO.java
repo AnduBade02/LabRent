@@ -12,8 +12,11 @@ public class RentalRequestDTO {
     private Long id;
     private Long userId;
     private String username;
+    private String userType;
+    private Double userReputationScore;
     private Long equipmentId;
     private String equipmentName;
+    private String equipmentCategory;
     private LocalDate startDate;
     private LocalDate endDate;
     private String status;
@@ -36,8 +39,11 @@ public class RentalRequestDTO {
         dto.setId(request.getId());
         dto.setUserId(request.getUser().getId());
         dto.setUsername(request.getUser().getUsername());
+        dto.setUserType(request.getUser().getUserType().name());
+        dto.setUserReputationScore(request.getUser().getReputationScore());
         dto.setEquipmentId(request.getEquipment().getId());
         dto.setEquipmentName(request.getEquipment().getName());
+        dto.setEquipmentCategory(request.getEquipment().getCategory());
         dto.setStartDate(request.getStartDate());
         dto.setEndDate(request.getEndDate());
         dto.setStatus(request.getStatus().name());
@@ -75,11 +81,20 @@ public class RentalRequestDTO {
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
 
+    public String getUserType() { return userType; }
+    public void setUserType(String userType) { this.userType = userType; }
+
+    public Double getUserReputationScore() { return userReputationScore; }
+    public void setUserReputationScore(Double userReputationScore) { this.userReputationScore = userReputationScore; }
+
     public Long getEquipmentId() { return equipmentId; }
     public void setEquipmentId(Long equipmentId) { this.equipmentId = equipmentId; }
 
     public String getEquipmentName() { return equipmentName; }
     public void setEquipmentName(String equipmentName) { this.equipmentName = equipmentName; }
+
+    public String getEquipmentCategory() { return equipmentCategory; }
+    public void setEquipmentCategory(String equipmentCategory) { this.equipmentCategory = equipmentCategory; }
 
     public LocalDate getStartDate() { return startDate; }
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
