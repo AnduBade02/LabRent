@@ -2,6 +2,7 @@ package ro.atemustard.labrent.controller;
 
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ro.atemustard.labrent.dto.RentalRequestCreateDTO;
 import ro.atemustard.labrent.dto.RentalRequestDTO;
@@ -38,36 +39,43 @@ public class RentalRequestController {
     }
 
     @GetMapping("/pending")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<RentalRequestDTO>> getPendingRequests() {
         return ResponseEntity.ok(rentalRequestService.getPendingRequests());
     }
 
     @GetMapping("/all")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<RentalRequestDTO>> getAllRequests() {
         return ResponseEntity.ok(rentalRequestService.getAllRequests());
     }
 
     @GetMapping("/prioritized/{equipmentId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<RentalRequestDTO>> getPrioritizedRequests(@PathVariable Long equipmentId) {
         return ResponseEntity.ok(rentalRequestService.getPrioritizedPendingRequests(equipmentId));
     }
 
     @PutMapping("/{id}/approve")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<RentalRequestDTO> approveRequest(@PathVariable Long id) {
         return ResponseEntity.ok(rentalRequestService.approveRequest(id));
     }
 
     @PutMapping("/{id}/reject")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<RentalRequestDTO> rejectRequest(@PathVariable Long id) {
         return ResponseEntity.ok(rentalRequestService.rejectRequest(id));
     }
 
     @PutMapping("/{id}/rent")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<RentalRequestDTO> markAsRented(@PathVariable Long id) {
         return ResponseEntity.ok(rentalRequestService.markAsRented(id));
     }
 
     @PutMapping("/{id}/return")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<RentalRequestDTO> markAsReturned(@PathVariable Long id) {
         return ResponseEntity.ok(rentalRequestService.markAsReturned(id));
     }

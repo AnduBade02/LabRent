@@ -8,6 +8,7 @@ public class AdminDashboardDTO {
     private Long pendingCount;
     private Long activeRentalsCount;
     private Long overdueCount;
+    private Long returnedCount;
     private Long totalEquipment;
     private Double utilizationPct;
     private Map<String, Long> statusDistribution;
@@ -25,6 +26,9 @@ public class AdminDashboardDTO {
 
     public Long getOverdueCount() { return overdueCount; }
     public void setOverdueCount(Long overdueCount) { this.overdueCount = overdueCount; }
+
+    public Long getReturnedCount() { return returnedCount; }
+    public void setReturnedCount(Long returnedCount) { this.returnedCount = returnedCount; }
 
     public Long getTotalEquipment() { return totalEquipment; }
     public void setTotalEquipment(Long totalEquipment) { this.totalEquipment = totalEquipment; }

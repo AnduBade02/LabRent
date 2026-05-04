@@ -60,6 +60,8 @@ public class ReturnAssessmentService {
                 .conditionRating(rating)
                 .notes(dto.getNotes())
                 .build();
+        double totalImpact = rating.getReputationImpact() + calculateOverduePenalty(request);
+        assessment.setReputationImpact(totalImpact);
 
         assessment = returnAssessmentRepository.save(assessment);
 
@@ -67,7 +69,6 @@ public class ReturnAssessmentService {
         request.setStatus(RequestStatus.COMPLETED);
 
         // Update user reputation (rating impact + overdue penalty, if any)
-        double totalImpact = rating.getReputationImpact() + calculateOverduePenalty(request);
         userService.updateReputationScore(request.getUser().getId(), totalImpact);
 
         // Reputation changed — rescore this user's PENDING requests so future
