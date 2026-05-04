@@ -26,7 +26,9 @@ public interface RentalRequestRepository extends JpaRepository<RentalRequest, Lo
 
     List<RentalRequest> findByStatusOrderByPriorityScoreDesc(RequestStatus status);
 
-    List<RentalRequest> findByEquipmentIdAndStatusOrderByPriorityScoreDesc(Long equipmentId, RequestStatus status);
+    List<RentalRequest> findByEquipmentIdAndStatusOrderByPriorityScoreDescCreatedAtAsc(Long equipmentId, RequestStatus status);
+
+    List<RentalRequest> findByEquipmentIdAndStatusOrderByCreatedAtAsc(Long equipmentId, RequestStatus status);
 
     /**
      * Seeder-only hook. {@code createdAt} is marked {@code updatable=false} on

@@ -12,6 +12,7 @@ const state = {
     myQueuePositions: {},
     usersSortKey: 'id',
     usersSortDir: 'asc',
+    activeStrategy: 'weightedScoring',
     charts: { status: null, topUsers: null, utilization: null }
 };
 
@@ -711,8 +712,12 @@ async function createRequest() {
 // ===== MANAGE REQUESTS (Admin) =====
 async function loadPendingRequests() {
     try {
-        const list = await api('/rental-requests/all');
+        const [list, strategyData] = await Promise.all([
+            api('/rental-requests/all'),
+            api('/admin/prioritization-strategy')
+        ]);
         state.requestsCache = list;
+        state.activeStrategy = strategyData.strategy;
         applyManageFilters();
     } catch (e) {
         showAlert('app-alert', e.message, 'error');
@@ -722,6 +727,7 @@ async function loadPendingRequests() {
 function applyManageFilters() {
     const search = (document.getElementById('mgr-search')?.value || '').toLowerCase();
     const status = document.getElementById('mgr-status-filter')?.value || '';
+    const isFifo = state.activeStrategy === 'fifo';
 
     let list = [...state.requestsCache];
     if (search) list = list.filter(r =>
@@ -729,12 +735,17 @@ function applyManageFilters() {
         r.equipmentName.toLowerCase().includes(search));
     if (status) list = list.filter(r => r.status === status);
 
-    // Overdue first, then by priority desc, then by createdAt desc
+    // Overdue always first (operator attention). Then the active strategy
+    // decides: FIFO → oldest createdAt first; Weighted → priority desc with
+    // oldest-first tiebreak (matches the backend's ORDER BY).
     list.sort((a, b) => {
         if ((a.overdue ? 1 : 0) !== (b.overdue ? 1 : 0)) return a.overdue ? -1 : 1;
+        if (isFifo) {
+            return new Date(a.createdAt) - new Date(b.createdAt);
+        }
         const pa = a.priorityScore ?? 0, pb = b.priorityScore ?? 0;
         if (pa !== pb) return pb - pa;
-        return new Date(b.createdAt) - new Date(a.createdAt);
+        return new Date(a.createdAt) - new Date(b.createdAt);
     });
 
     const container = document.getElementById('pending-requests-list');
@@ -979,6 +990,7 @@ async function submitAssessment() {
 async function loadStrategy() {
     try {
         const data = await api('/admin/prioritization-strategy');
+        state.activeStrategy = data.strategy;
         document.getElementById('current-strategy').textContent = data.strategy;
         document.getElementById('strategy-select').value = data.strategy;
     } catch (e) {
@@ -992,6 +1004,7 @@ async function changeStrategy() {
             method: 'PUT',
             body: JSON.stringify({ strategy: document.getElementById('strategy-select').value })
         });
+        state.activeStrategy = data.strategy;
         document.getElementById('current-strategy').textContent = data.strategy;
         toast('Strategy changed to ' + data.strategy, 'success');
     } catch (e) {

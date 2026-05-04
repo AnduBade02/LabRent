@@ -59,8 +59,18 @@ public class PrioritizationService {
         this.activeStrategyName = strategyName;
     }
 
+    /**
+     * Returns the PENDING queue for an equipment, ordered per the active
+     * strategy: weighted → highest priorityScore first; FIFO → oldest
+     * createdAt first. The priority scores themselves remain identical under
+     * both strategies — only the order differs.
+     */
     public List<RentalRequest> getPrioritizedQueue(Long equipmentId) {
-        return rentalRequestRepository.findByEquipmentIdAndStatusOrderByPriorityScoreDesc(
+        if ("fifo".equals(activeStrategyName)) {
+            return rentalRequestRepository.findByEquipmentIdAndStatusOrderByCreatedAtAsc(
+                    equipmentId, RequestStatus.PENDING);
+        }
+        return rentalRequestRepository.findByEquipmentIdAndStatusOrderByPriorityScoreDescCreatedAtAsc(
                 equipmentId, RequestStatus.PENDING);
     }
 
