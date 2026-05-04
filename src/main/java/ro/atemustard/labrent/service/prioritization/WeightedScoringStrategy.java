@@ -9,14 +9,15 @@ import java.time.temporal.ChronoUnit;
 /**
  * Weighted-scoring prioritization strategy.
  *
- * Factors:
- * - Reputation:       0–40 points (reputationScore / 100 * 20, capped at 40)
+ * Factors (all composed into a single stable score):
+ * - Base:             50 points
+ * - Reputation:       0..40 points (reputationScore / 100 * 20, capped at 40)
  * - Active requests:  -5 points per active request (discourages hoarding)
  * - Student bonus:    +5 points if the user is a student
- * - Exam urgency:     0–30 points (the closer the exam, the higher the score)
- * - Earlier request:  small timestamp-based tiebreaker (older wins on ties)
+ * - Exam urgency:     0..30 points (the closer the exam, the higher the score)
  *
- * Final score = 50 (base) + reputation + active penalty + student bonus + exam urgency
+ * Ties are broken at query time by {@code ORDER BY ..., createdAt ASC}
+ * (older request wins), keeping the score itself stable across recalculations.
  */
 @Component("weightedScoring")
 public class WeightedScoringStrategy implements PrioritizationStrategy {
@@ -42,13 +43,6 @@ public class WeightedScoringStrategy implements PrioritizationStrategy {
             if (daysUntilExam >= 0 && daysUntilExam <= 30) {
                 score += (30.0 - daysUntilExam);
             }
-        }
-
-        // Tiebreaker: earlier requests get a tiny bonus (older = higher)
-        if (request.getCreatedAt() != null) {
-            long ageSeconds = ChronoUnit.SECONDS.between(
-                    request.getCreatedAt(), java.time.LocalDateTime.now());
-            score += 0.0001 * Math.max(0, ageSeconds);
         }
 
         return score;

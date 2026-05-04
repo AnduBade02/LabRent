@@ -59,8 +59,18 @@ public class PrioritizationService {
         this.activeStrategyName = strategyName;
     }
 
+    /**
+     * Returns the PENDING queue for an equipment, ordered per the active
+     * strategy: weighted → highest priorityScore first; FIFO → oldest
+     * createdAt first. The priority scores themselves remain identical under
+     * both strategies — only the order differs.
+     */
     public List<RentalRequest> getPrioritizedQueue(Long equipmentId) {
-        return rentalRequestRepository.findByEquipmentIdAndStatusOrderByPriorityScoreDesc(
+        if ("fifo".equals(activeStrategyName)) {
+            return rentalRequestRepository.findByEquipmentIdAndStatusOrderByCreatedAtAsc(
+                    equipmentId, RequestStatus.PENDING);
+        }
+        return rentalRequestRepository.findByEquipmentIdAndStatusOrderByPriorityScoreDescCreatedAtAsc(
                 equipmentId, RequestStatus.PENDING);
     }
 
@@ -107,12 +117,16 @@ public class PrioritizationService {
         double reputationScore = request.getUser().getReputationScore();
         boolean isStudent = request.getUser().getUserType() == UserType.STUDENT;
 
+        // Exam date only exists on the academic subclass; standard requests have none.
+        java.time.LocalDate examDate = (request instanceof ro.atemustard.labrent.model.AcademicRentalRequest a)
+                ? a.getExamDate() : null;
+
         return new PrioritizationContext(
                 activeRequestCount,
                 competingRequestCount,
                 reputationScore,
                 isStudent,
-                request.getExamDate()
+                examDate
         );
     }
 }

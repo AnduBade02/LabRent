@@ -19,6 +19,7 @@ const state = {
     assessmentQuickFilters: loadQuickFilters('assessment_quick_filters'),
     usersSortKey: 'id',
     usersSortDir: 'asc',
+    activeStrategy: 'weightedScoring',
     charts: { status: null, topUsers: null, utilization: null }
 };
 
@@ -1121,8 +1122,12 @@ async function createRequest() {
 // ===== MANAGE REQUESTS (Admin) =====
 async function loadPendingRequests() {
     try {
-        const list = await api('/rental-requests/all');
+        const [list, strategyData] = await Promise.all([
+            api('/rental-requests/all'),
+            api('/admin/prioritization-strategy')
+        ]);
         state.requestsCache = list;
+        state.activeStrategy = strategyData.strategy;
         populateManageCategoryFilter(list);
         restoreManageFilters();
         applyManageFilters();
@@ -1336,6 +1341,16 @@ function syncManageQuickFiltersWithControls(status, action) {
 }
 
 function sortManageRequests(list, sort) {
+    const isFifo = state.activeStrategy === 'fifo';
+    const strategyCompare = (a, b) => {
+        if (isFifo) {
+            return new Date(a.createdAt) - new Date(b.createdAt);
+        }
+        const pa = a.priorityScore ?? 0, pb = b.priorityScore ?? 0;
+        if (pa !== pb) return pb - pa;
+        return new Date(a.createdAt) - new Date(b.createdAt);
+    };
+
     list.sort((a, b) => {
         if (sort === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
         if (sort === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
@@ -1343,10 +1358,10 @@ function sortManageRequests(list, sort) {
         if (sort === 'overdue') {
             if ((a.overdue ? 1 : 0) !== (b.overdue ? 1 : 0)) return a.overdue ? -1 : 1;
             if ((a.daysOverdue || 0) !== (b.daysOverdue || 0)) return (b.daysOverdue || 0) - (a.daysOverdue || 0);
+            return strategyCompare(a, b);
         }
-        const pa = a.priorityScore ?? 0, pb = b.priorityScore ?? 0;
-        if (pa !== pb) return pb - pa;
-        return new Date(b.createdAt) - new Date(a.createdAt);
+        if ((a.overdue ? 1 : 0) !== (b.overdue ? 1 : 0)) return a.overdue ? -1 : 1;
+        return strategyCompare(a, b);
     });
 }
 
@@ -2177,6 +2192,7 @@ async function submitAssessment() {
 async function loadStrategy() {
     try {
         const data = await api('/admin/prioritization-strategy');
+        state.activeStrategy = data.strategy;
         document.getElementById('current-strategy').textContent = data.strategy;
         document.getElementById('strategy-select').value = data.strategy;
     } catch (e) {
@@ -2190,6 +2206,7 @@ async function changeStrategy() {
             method: 'PUT',
             body: JSON.stringify({ strategy: document.getElementById('strategy-select').value })
         });
+        state.activeStrategy = data.strategy;
         document.getElementById('current-strategy').textContent = data.strategy;
         toast('Strategy changed to ' + data.strategy, 'success');
     } catch (e) {
