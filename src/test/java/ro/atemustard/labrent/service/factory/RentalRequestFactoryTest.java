@@ -2,8 +2,10 @@ package ro.atemustard.labrent.service.factory;
 
 import org.junit.jupiter.api.Test;
 import ro.atemustard.labrent.dto.RentalRequestCreateDTO;
+import ro.atemustard.labrent.model.AcademicRentalRequest;
 import ro.atemustard.labrent.model.Equipment;
 import ro.atemustard.labrent.model.RentalRequest;
+import ro.atemustard.labrent.model.StandardRentalRequest;
 import ro.atemustard.labrent.model.User;
 import ro.atemustard.labrent.model.UserType;
 
@@ -25,18 +27,17 @@ class RentalRequestFactoryTest {
     }
 
     @Test
-    void standardFactory_doesNotSetExamFields() {
+    void standardFactory_producesStandardSubclassWithoutAcademicFields() {
         RentalRequestCreateDTO dto = baseDto();
         RentalRequest r = new StandardRentalRequestFactory().createRequest(user, equipment, dto);
 
-        assertThat(r.getIsForExam()).isFalse();
-        assertThat(r.getExamDate()).isNull();
-        assertThat(r.getJustification()).isNull();
+        assertThat(r).isInstanceOf(StandardRentalRequest.class);
+        assertThat(r).isNotInstanceOf(AcademicRentalRequest.class);
         assertThat(r.getProjectDescription()).isEqualTo("desc");
     }
 
     @Test
-    void academicFactory_setsAllExamFields() {
+    void academicFactory_producesAcademicSubclassWithExamFields() {
         RentalRequestCreateDTO dto = baseDto();
         dto.setIsForExam(true);
         dto.setExamDate(LocalDate.now().plusDays(10));
@@ -44,8 +45,9 @@ class RentalRequestFactoryTest {
 
         RentalRequest r = new AcademicRentalRequestFactory().createRequest(user, equipment, dto);
 
-        assertThat(r.getIsForExam()).isTrue();
-        assertThat(r.getExamDate()).isEqualTo(dto.getExamDate());
-        assertThat(r.getJustification()).isEqualTo("Final exam in electronics");
+        assertThat(r).isInstanceOf(AcademicRentalRequest.class);
+        AcademicRentalRequest academic = (AcademicRentalRequest) r;
+        assertThat(academic.getExamDate()).isEqualTo(dto.getExamDate());
+        assertThat(academic.getJustification()).isEqualTo("Final exam in electronics");
     }
 }

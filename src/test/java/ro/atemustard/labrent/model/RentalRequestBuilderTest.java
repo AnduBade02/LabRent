@@ -13,7 +13,7 @@ class RentalRequestBuilderTest {
     private final Equipment eq = new Equipment("Scope", "d", "cat", 1);
 
     @Test
-    void build_setsDefaultsAndStatusPending() {
+    void build_setsDefaultsAndStatusPending_andProducesStandardSubclass() {
         RentalRequest r = RentalRequest.builder()
                 .user(user).equipment(eq)
                 .startDate(LocalDate.now())
@@ -21,7 +21,7 @@ class RentalRequestBuilderTest {
                 .build();
 
         assertThat(r.getStatus()).isEqualTo(RequestStatus.PENDING);
-        assertThat(r.getIsForExam()).isFalse();
+        assertThat(r).isInstanceOf(StandardRentalRequest.class);
         assertThat(r.getUser()).isSameAs(user);
         assertThat(r.getEquipment()).isSameAs(eq);
     }
@@ -45,7 +45,7 @@ class RentalRequestBuilderTest {
     }
 
     @Test
-    void build_examFieldsArePropagated() {
+    void build_examFieldsArePropagated_andProducesAcademicSubclass() {
         LocalDate exam = LocalDate.now().plusDays(7);
         RentalRequest r = RentalRequest.builder()
                 .user(user).equipment(eq)
@@ -56,8 +56,9 @@ class RentalRequestBuilderTest {
                 .justification("midterm")
                 .build();
 
-        assertThat(r.getIsForExam()).isTrue();
-        assertThat(r.getExamDate()).isEqualTo(exam);
-        assertThat(r.getJustification()).isEqualTo("midterm");
+        assertThat(r).isInstanceOf(AcademicRentalRequest.class);
+        AcademicRentalRequest academic = (AcademicRentalRequest) r;
+        assertThat(academic.getExamDate()).isEqualTo(exam);
+        assertThat(academic.getJustification()).isEqualTo("midterm");
     }
 }

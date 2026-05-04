@@ -43,9 +43,13 @@ public class RentalRequestDTO {
         dto.setStatus(request.getStatus().name());
         dto.setProjectDescription(request.getProjectDescription());
         dto.setPriorityScore(request.getPriorityScore());
-        dto.setIsForExam(request.getIsForExam());
-        dto.setExamDate(request.getExamDate());
-        dto.setJustification(request.getJustification());
+        if (request instanceof ro.atemustard.labrent.model.AcademicRentalRequest academic) {
+            dto.setIsForExam(true);
+            dto.setExamDate(academic.getExamDate());
+            dto.setJustification(academic.getJustification());
+        } else {
+            dto.setIsForExam(false);
+        }
         dto.setCreatedAt(request.getCreatedAt());
         dto.setReturnedAt(request.getReturnedAt());
 

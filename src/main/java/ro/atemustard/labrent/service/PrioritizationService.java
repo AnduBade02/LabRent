@@ -117,12 +117,16 @@ public class PrioritizationService {
         double reputationScore = request.getUser().getReputationScore();
         boolean isStudent = request.getUser().getUserType() == UserType.STUDENT;
 
+        // Exam date only exists on the academic subclass; standard requests have none.
+        java.time.LocalDate examDate = (request instanceof ro.atemustard.labrent.model.AcademicRentalRequest a)
+                ? a.getExamDate() : null;
+
         return new PrioritizationContext(
                 activeRequestCount,
                 competingRequestCount,
                 reputationScore,
                 isStudent,
-                request.getExamDate()
+                examDate
         );
     }
 }
