@@ -707,6 +707,9 @@ main {
     max-width: 1240px;
     padding: clamp(18px, 3vw, 34px);
 }
+.section {
+    min-width: 0;
+}
 .section.active {
     animation: section-fade 0.16s ease-out;
 }
@@ -730,6 +733,17 @@ main {
     font-size: 2rem;
     color: var(--color-primary);
 }
+.auth-subtitle {
+    text-align: center;
+    margin-bottom: 22px;
+    color: #64748b;
+}
+.auth-hint {
+    margin-top: 14px;
+    font-size: 0.8rem;
+    color: #64748b;
+    text-align: center;
+}
 .auth-tabs {
     gap: 6px;
     background: #e5e7eb;
@@ -751,9 +765,9 @@ table,
     box-shadow: var(--shadow-sm);
 }
 .card {
-    border-radius: 10px;
+    border-radius: 8px;
     padding: clamp(16px, 2vw, 22px);
-    margin-bottom: 18px;
+    margin-bottom: 20px;
 }
 .card h3 {
     color: var(--color-primary);
@@ -795,6 +809,9 @@ table,
     min-height: 30px;
     padding: 5px 10px;
 }
+.btn-full {
+    width: 100%;
+}
 
 .badge {
     border-radius: 999px;
@@ -815,7 +832,7 @@ table,
 
 .section-header {
     align-items: flex-start;
-    margin-bottom: 18px;
+    margin-bottom: 20px;
 }
 .section-actions .btn,
 .section-header > .btn {
@@ -829,19 +846,23 @@ table,
 
 .filter-panel {
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
-    gap: 14px;
-    padding: 16px;
-    border-radius: 10px;
+    gap: 18px;
+    padding: 18px;
+    border-radius: 8px;
     background: rgba(255, 255, 255, 0.92);
+    margin-bottom: 24px;
+    align-items: start;
 }
 .filter-group {
+    flex-direction: column;
+    align-content: normal;
     gap: 9px;
     min-width: 0;
 }
 .filter-group-title {
     color: #475569;
     font-size: 0.72rem;
-    margin-bottom: 1px;
+    margin-bottom: 2px;
 }
 .filter-panel input,
 .filter-panel select,
@@ -863,7 +884,9 @@ table,
 }
 .filter-panel input,
 .filter-panel select {
-    min-width: min(100%, 170px);
+    width: 100%;
+    min-width: 0;
+    flex: none;
 }
 .filter-panel input::placeholder,
 .form-group input::placeholder,
@@ -879,7 +902,9 @@ table,
     box-shadow: inset 0 0 0 1px #2563eb;
 }
 .quick-filter-bar {
-    margin-bottom: 14px;
+    gap: 10px;
+    row-gap: 10px;
+    margin-bottom: 16px;
 }
 .filter-chip,
 .active-filter-pill,
@@ -898,17 +923,92 @@ table,
     background: var(--color-primary);
 }
 .filter-summary {
-    padding-top: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 14px;
+    margin-top: 2px;
     border-top: 1px solid #eef2f7;
+    color: #555;
+    font-size: 0.85rem;
+}
+.summary-counts,
+.active-filter-list {
+    gap: 8px;
+    row-gap: 8px;
 }
 .summary-counts span,
 .no-active-filters {
     background: #f8fafc;
     color: #475569;
+    padding: 6px 10px;
 }
 .active-filter-pill {
     background: #1d4ed8;
     border-color: #1d4ed8;
+    gap: 6px;
+    padding: 6px 10px;
+}
+
+.section-heading {
+    margin-bottom: 18px;
+}
+.section-note {
+    margin: -6px 0 16px;
+    color: #64748b;
+    font-size: 0.92rem;
+}
+.form-card {
+    max-width: 560px;
+}
+.content-card-narrow {
+    max-width: 440px;
+}
+.card-intro {
+    margin-bottom: 14px;
+}
+.card-section-title {
+    margin-bottom: 14px;
+}
+.dashboard-note {
+    margin-top: 8px;
+    color: #555;
+}
+.dashboard-row {
+    margin: 10px 0;
+}
+.muted-inline {
+    color: #888;
+}
+.assessment-section-title {
+    margin: 26px 0 12px;
+    color: var(--color-primary);
+    font-size: 1.04rem;
+}
+#assessments-list > .assessment-section-title:first-child {
+    margin-top: 2px;
+}
+.assessment-form-card {
+    max-width: 640px;
+    margin-bottom: 30px;
+}
+.filter-panel + .grid,
+.filter-panel + #my-requests-list,
+.filter-panel + #pending-requests-list,
+.filter-panel + #users-table-container,
+.filter-panel + #assessments-list {
+    margin-top: 2px;
+}
+.manage-summary.filter-summary {
+    margin: 2px 0 0;
+}
+.content-divider {
+    margin: 18px 0;
+    border: 0;
+    border-top: 1px solid #e5e7eb;
+}
+.modal-section-title {
+    margin-bottom: 10px;
 }
 
 .equipment-card {
@@ -985,12 +1085,12 @@ table,
 
 table {
     display: table;
-    border-radius: 10px;
+    border-radius: 8px;
     overflow: hidden;
 }
 #users-table-container {
     overflow-x: auto;
-    border-radius: 10px;
+    border-radius: 8px;
 }
 #users-table-container table {
     min-width: 780px;
@@ -1014,7 +1114,7 @@ th, td {
     grid-template-columns: auto minmax(0, 1fr) auto auto auto;
 }
 .modal {
-    border-radius: 12px;
+    border-radius: 8px;
     max-width: 620px;
     box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
 }

@@ -13,7 +13,7 @@
 <div id="auth-screen">
     <div class="auth-container">
         <h2>LabRent</h2>
-        <p style="text-align:center; margin-bottom:20px; color:#666;">Laboratory Equipment Rental System</p>
+        <p class="auth-subtitle">Laboratory Equipment Rental System</p>
 
         <div class="auth-tabs">
             <button class="active" onclick="showAuthTab('login')">Login</button>
@@ -32,8 +32,8 @@
                 <label>Password</label>
                 <input type="password" id="login-password" placeholder="e.g. admin123">
             </div>
-            <button class="btn btn-primary" style="width:100%" onclick="login()">Login</button>
-            <p style="margin-top:12px; font-size:0.8rem; color:#888; text-align:center;">
+            <button class="btn btn-primary btn-full" onclick="login()">Login</button>
+            <p class="auth-hint">
                 Test accounts: <strong>admin/admin123</strong> | <strong>ion.popescu/parola123</strong>
             </p>
         </div>
@@ -59,7 +59,7 @@
                     <option value="NON_STUDENT">Non-Student</option>
                 </select>
             </div>
-            <button class="btn btn-primary" style="width:100%" onclick="register()">Register</button>
+            <button class="btn btn-primary btn-full" onclick="register()">Register</button>
         </div>
     </div>
 </div>
@@ -94,14 +94,14 @@
 
         <!-- ========== DASHBOARD (client) ========== -->
         <div id="section-dashboard" class="section active">
-            <h2 style="margin-bottom:16px">Dashboard</h2>
+            <h2 class="section-heading">Dashboard</h2>
             <div class="stats" id="dashboard-stats"></div>
             <div id="dashboard-content"></div>
         </div>
 
         <!-- ========== ADMIN DASHBOARD ========== -->
         <div id="section-admin-dashboard" class="section">
-            <h2 style="margin-bottom:16px">Admin Dashboard</h2>
+            <h2 class="section-heading">Admin Dashboard</h2>
             <div class="kpi-grid" id="admin-kpi-cards"></div>
 
             <div class="chart-grid">
@@ -120,7 +120,7 @@
             </div>
 
             <div class="card">
-                <h3 style="margin-bottom:12px">Recent Activity</h3>
+                <h3 class="card-section-title">Recent Activity</h3>
                 <div id="activity-feed-list"></div>
             </div>
         </div>
@@ -224,8 +224,8 @@
 
         <!-- ========== NEW REQUEST ========== -->
         <div id="section-new-request" class="section">
-            <h2 style="margin-bottom:16px">Create Rental Request</h2>
-            <div class="card" style="max-width:500px">
+            <h2 class="section-heading">Create Rental Request</h2>
+            <div class="card form-card">
                 <div class="form-group">
                     <label>Equipment</label>
                     <select id="req-equipment"></select>
@@ -386,7 +386,7 @@
                 <h2>Return Assessments</h2>
                 <button class="btn" onclick="resetAssessmentFilters()">Clear Filters</button>
             </div>
-            <p style="margin-bottom:12px; color:#666;">Requests with RETURNED status that need assessment:</p>
+            <p class="section-note">Requests with RETURNED status that need assessment:</p>
             <div class="quick-filter-bar">
                 <button class="filter-chip" data-assessment-filter="needs-assessment" onclick="setAssessmentQuickFilter('needs-assessment')">Needs assessment</button>
                 <button class="filter-chip" data-assessment-filter="late" onclick="setAssessmentQuickFilter('late')">Late returns</button>
@@ -437,9 +437,9 @@
 
         <!-- ========== STRATEGY (Admin) ========== -->
         <div id="section-strategy" class="section">
-            <h2 style="margin-bottom:16px">Prioritization Strategy</h2>
-            <div class="card" style="max-width:400px">
-                <p style="margin-bottom:12px;">Current strategy: <strong id="current-strategy"></strong></p>
+            <h2 class="section-heading">Prioritization Strategy</h2>
+            <div class="card content-card-narrow">
+                <p class="card-intro">Current strategy: <strong id="current-strategy"></strong></p>
                 <div class="form-group">
                     <label>Switch Strategy</label>
                     <select id="strategy-select">

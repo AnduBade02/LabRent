@@ -321,7 +321,7 @@ async function loadClientDashboard() {
         if (overdueRentals.length > 0) {
             html += `<div class="card overdue">
                 <h3><span class="badge badge-overdue">OVERDUE</span> ${overdueRentals.length} rental(s) past due date</h3>
-                <p style="margin-top:6px; color:#555">Return the equipment as soon as possible to avoid further reputation penalty (up to -10 points).</p>
+                <p class="dashboard-note">Return the equipment as soon as possible to avoid further reputation penalty (up to -10 points).</p>
             </div>`;
         }
 
@@ -333,7 +333,7 @@ async function loadClientDashboard() {
                     : (r.daysRemaining !== null && r.daysRemaining !== undefined
                         ? `<span class="badge badge-rented">${r.daysRemaining} day(s) remaining</span>`
                         : '');
-                html += `<p style="margin:8px 0">
+                html += `<p class="dashboard-row">
                     <strong>${r.equipmentName}</strong> · due ${r.endDate} ${daysTxt}
                 </p>`;
             }
@@ -346,8 +346,8 @@ async function loadClientDashboard() {
                 const pos = queuePositions[r.id];
                 const posTxt = pos
                     ? `<span class="queue-position">Position ${pos}</span>`
-                    : '<span style="color:#888">not queued</span>';
-                html += `<p style="margin:8px 0">
+                    : '<span class="muted-inline">not queued</span>';
+                html += `<p class="dashboard-row">
                     <strong>${r.equipmentName}</strong> · priority ${r.priorityScore?.toFixed(1) || 'N/A'} ${posTxt}
                 </p>`;
             }
@@ -740,7 +740,7 @@ function resetEquipmentFilters() {
 async function showEquipmentDetailModal(id) {
     try {
         const eq = state.equipmentCache.find(e => e.id === id) || await api('/equipment/' + id);
-        let queueHtml = '<p style="color:#888">No pending requests in queue.</p>';
+        let queueHtml = '<p class="muted-inline">No pending requests in queue.</p>';
         let strategyHtml = '';
         try {
             const [queue, strategy] = await Promise.all([
@@ -770,11 +770,11 @@ async function showEquipmentDetailModal(id) {
             <p><strong>Available:</strong> ${eq.availableQuantity} / ${eq.totalQuantity}</p>
             <p><strong>Utilization:</strong> ${utilization}%</p>
             <p class="meta">Added: ${formatDate(eq.createdAt)}</p>
-            <hr style="margin:16px 0">
-            <h3 style="margin-bottom:8px">Priority Queue</h3>
+            <hr class="content-divider">
+            <h3 class="modal-section-title">Priority Queue</h3>
             ${strategyHtml}
             ${queueHtml}
-            <div class="actions" style="margin-top:16px">
+            <div class="actions">
                 <button class="btn" onclick="closeModal()">Close</button>
             </div>
         `);
@@ -1241,6 +1241,14 @@ function resetManageFilters() {
 function applyManageFilters() {
     const search = (document.getElementById('mgr-search')?.value || '').toLowerCase();
     const status = document.getElementById('mgr-status-filter')?.value || '';
+    const userType = document.getElementById('mgr-user-type-filter')?.value || '';
+    const category = document.getElementById('mgr-category-filter')?.value || '';
+    const priority = document.getElementById('mgr-priority-filter')?.value || '';
+    const action = document.getElementById('mgr-action-filter')?.value || '';
+    const sort = document.getElementById('mgr-sort')?.value || 'priority';
+    const startFrom = document.getElementById('mgr-start-from')?.value || '';
+    const startTo = document.getElementById('mgr-start-to')?.value || '';
+    syncManageQuickFiltersWithControls(status, action);
 
     let list = [...state.requestsCache];
     if (search) list = list.filter(r =>
@@ -1249,14 +1257,25 @@ function applyManageFilters() {
         (r.equipmentCategory || '').toLowerCase().includes(search) ||
         String(r.id).includes(search));
     if (status) list = list.filter(r => r.status === status);
+    if (userType) list = list.filter(r => r.userType === userType);
+    if (category) list = list.filter(r => r.equipmentCategory === category);
+    if (priority === 'high') list = list.filter(r => (r.priorityScore || 0) >= 75);
+    if (priority === 'medium') list = list.filter(r => (r.priorityScore || 0) >= 50 && (r.priorityScore || 0) < 75);
+    if (priority === 'low') list = list.filter(r => (r.priorityScore || 0) < 50);
+    if (action === 'needs-action') list = list.filter(isNeedsAction);
+    if (action === 'overdue') list = list.filter(r => r.overdue);
+    if (action === 'exam') list = list.filter(r => r.isForExam);
+    if (startFrom) list = list.filter(r => r.startDate >= startFrom);
+    if (startTo) list = list.filter(r => r.startDate <= startTo);
 
-    // Overdue first, then by priority desc, then by createdAt desc
-    list.sort((a, b) => {
-        if ((a.overdue ? 1 : 0) !== (b.overdue ? 1 : 0)) return a.overdue ? -1 : 1;
-        const pa = a.priorityScore ?? 0, pb = b.priorityScore ?? 0;
-        if (pa !== pb) return pb - pa;
-        return new Date(b.createdAt) - new Date(a.createdAt);
-    });
+    if (state.manageQuickFilters.length > 0) {
+        list = list.filter(r => state.manageQuickFilters.every(name => quickFilterMatches(r, name)));
+    }
+
+    sortManageRequests(list, sort);
+    persistManageFilters();
+    renderManageFilterState();
+    renderManageSummary(list);
 
     const container = document.getElementById('pending-requests-list');
     if (list.length === 0) {
@@ -1322,6 +1341,16 @@ function syncManageQuickFiltersWithControls(status, action) {
 }
 
 function sortManageRequests(list, sort) {
+    const isFifo = state.activeStrategy === 'fifo';
+    const strategyCompare = (a, b) => {
+        if (isFifo) {
+            return new Date(a.createdAt) - new Date(b.createdAt);
+        }
+        const pa = a.priorityScore ?? 0, pb = b.priorityScore ?? 0;
+        if (pa !== pb) return pb - pa;
+        return new Date(a.createdAt) - new Date(b.createdAt);
+    };
+
     list.sort((a, b) => {
         if (sort === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
         if (sort === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
@@ -1329,10 +1358,10 @@ function sortManageRequests(list, sort) {
         if (sort === 'overdue') {
             if ((a.overdue ? 1 : 0) !== (b.overdue ? 1 : 0)) return a.overdue ? -1 : 1;
             if ((a.daysOverdue || 0) !== (b.daysOverdue || 0)) return (b.daysOverdue || 0) - (a.daysOverdue || 0);
+            return strategyCompare(a, b);
         }
-        const pa = a.priorityScore ?? 0, pb = b.priorityScore ?? 0;
-        if (pa !== pb) return pb - pa;
-        return new Date(b.createdAt) - new Date(a.createdAt);
+        if ((a.overdue ? 1 : 0) !== (b.overdue ? 1 : 0)) return a.overdue ? -1 : 1;
+        return strategyCompare(a, b);
     });
 }
 
@@ -1605,9 +1634,9 @@ async function loadAssessments() {
             ? returned.map(r => `<option value="${r.id}">#${r.id} - ${r.username} - ${r.equipmentName} (${returnedLateDays(r)} day(s) late)</option>`).join('')
             : '<option value="" disabled>No returned requests awaiting assessment</option>';
 
-        let html = '<h3 style="margin-bottom:12px">Submit New Assessment</h3>';
+        let html = '<h3 class="assessment-section-title">Submit New Assessment</h3>';
         html += `
-            <div class="card" style="max-width:600px; margin-bottom:24px">
+            <div class="card form-card assessment-form-card">
                 <div class="form-group">
                     <label>Returned Rental Request</label>
                     <select id="assess-req-id" onchange="updateAssessmentPreview()">${options}</select>
@@ -1632,7 +1661,7 @@ async function loadAssessments() {
             </div>
         `;
 
-        html += `<h3 style="margin-bottom:12px">Awaiting Assessment (<span id="assessment-queue-count">${returned.length}</span>)</h3>`;
+        html += `<h3 class="assessment-section-title">Awaiting Assessment (<span id="assessment-queue-count">${returned.length}</span>)</h3>`;
         html += '<div id="assessment-queue-list"></div>';
 
         const requestById = new Map(allRequests.map(r => [r.id, r]));
@@ -1651,7 +1680,7 @@ async function loadAssessments() {
         }
         state.assessmentHistoryCache = history;
 
-        html += '<h3 style="margin-bottom:12px">Assessment History</h3>';
+        html += '<h3 class="assessment-section-title">Assessment History</h3>';
         html += '<div id="assessment-history-list"></div>';
 
         document.getElementById('assessments-list').innerHTML = html;
