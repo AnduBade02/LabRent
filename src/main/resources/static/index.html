@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LabRent - Laboratory Equipment Rental System</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<!-- ==================== AUTH SCREEN ==================== -->
+<div id="auth-screen">
+    <div class="auth-container">
+        <h2>LabRent</h2>
+        <p class="auth-subtitle">Laboratory Equipment Rental System</p>
+
+        <div class="auth-tabs">
+            <button class="active" onclick="showAuthTab('login')">Login</button>
+            <button onclick="showAuthTab('register')">Register</button>
+        </div>
+
+        <div id="auth-alert"></div>
+
+        <!-- Login Form -->
+        <div id="login-form" class="card">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="login-username" placeholder="e.g. admin">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="login-password" placeholder="e.g. admin123">
+            </div>
+            <button class="btn btn-primary btn-full" onclick="login()">Login</button>
+            <p class="auth-hint">
+                Test accounts: <strong>admin/admin123</strong> | <strong>ion.popescu/parola123</strong>
+            </p>
+        </div>
+
+        <!-- Register Form -->
+        <div id="register-form" class="card" style="display:none">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="reg-username" placeholder="min 3 characters">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="reg-email" placeholder="your@email.com">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="reg-password" placeholder="min 6 characters">
+            </div>
+            <div class="form-group">
+                <label>User Type</label>
+                <select id="reg-usertype">
+                    <option value="STUDENT">Student</option>
+                    <option value="NON_STUDENT">Non-Student</option>
+                </select>
+            </div>
+            <button class="btn btn-primary btn-full" onclick="register()">Register</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== APP SCREEN ==================== -->
+<div id="app-screen" class="hidden">
+
+    <header>
+        <h1>LabRent</h1>
+        <div class="user-info">
+            <span id="header-user"></span>
+            <span id="header-role" class="badge"></span>
+            <button onclick="logout()">Logout</button>
+        </div>
+    </header>
+
+    <nav id="main-nav">
+        <button class="active" onclick="showSection('dashboard')">Dashboard</button>
+        <button onclick="showSection('equipment')">Equipment</button>
+        <button onclick="showSection('my-requests')">My Requests</button>
+        <button onclick="showSection('new-request')">New Request</button>
+        <!-- Admin-only tabs -->
+        <button class="admin-only" onclick="showSection('pending-requests')">Manage Requests</button>
+        <button class="admin-only" onclick="showSection('all-users')">Users</button>
+        <button class="admin-only" onclick="showSection('assessments')">Assessments</button>
+        <button class="admin-only" onclick="showSection('strategy')">Strategy</button>
+    </nav>
+
+
+    <main>
+        <div id="app-alert"></div>
+
+        <!-- ========== DASHBOARD (client) ========== -->
+        <div id="section-dashboard" class="section active">
+            <h2 class="section-heading">Dashboard</h2>
+            <div class="stats" id="dashboard-stats"></div>
+            <div id="dashboard-content"></div>
+        </div>
+
+        <!-- ========== ADMIN DASHBOARD ========== -->
+        <div id="section-admin-dashboard" class="section">
+            <h2 class="section-heading">Admin Dashboard</h2>
+            <div class="kpi-grid" id="admin-kpi-cards"></div>
+
+            <div class="chart-grid">
+                <div class="card chart-card">
+                    <h3>Request Status Distribution</h3>
+                    <canvas id="chart-status"></canvas>
+                </div>
+                <div class="card chart-card">
+                    <h3>Top Users by Reputation</h3>
+                    <canvas id="chart-top-users"></canvas>
+                </div>
+                <div class="card chart-card chart-card-wide">
+                    <h3>Equipment Utilization (%)</h3>
+                    <canvas id="chart-utilization"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 class="card-section-title">Recent Activity</h3>
+                <div id="activity-feed-list"></div>
+            </div>
+        </div>
+
+        <!-- ========== EQUIPMENT ========== -->
+        <div id="section-equipment" class="section">
+            <div class="section-header">
+                <h2>Equipment</h2>
+                <div class="section-actions">
+                    <button class="btn" onclick="resetEquipmentFilters()">Clear Filters</button>
+                    <button class="btn btn-primary admin-only" onclick="showAddEquipmentModal()">+ Add Equipment</button>
+                </div>
+            </div>
+            <div class="quick-filter-bar">
+                <button class="filter-chip" data-equipment-filter="available" onclick="setEquipmentQuickFilter('available')">Available</button>
+                <button class="filter-chip" data-equipment-filter="scarce" onclick="setEquipmentQuickFilter('scarce')">Low stock</button>
+                <button class="filter-chip" data-equipment-filter="out-of-stock" onclick="setEquipmentQuickFilter('out-of-stock')">Out of stock</button>
+                <button class="filter-chip" data-equipment-filter="high-utilization" onclick="setEquipmentQuickFilter('high-utilization')">High utilization</button>
+            </div>
+            <div class="filter-panel">
+                <div class="filter-group">
+                    <div class="filter-group-title">Find</div>
+                    <input type="text" id="eq-search" placeholder="Search by name..." oninput="applyEquipmentFilters()">
+                </div>
+                <div class="filter-group">
+                    <div class="filter-group-title">Inventory</div>
+                    <select id="eq-category-filter" onchange="applyEquipmentFilters()">
+                        <option value="">All categories</option>
+                    </select>
+                    <select id="eq-availability-filter" onchange="applyEquipmentFilters()">
+                        <option value="">All availability</option>
+                        <option value="available">Available only</option>
+                        <option value="unavailable">Out of stock</option>
+                        <option value="scarce">Low stock</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <div class="filter-group-title">Sort</div>
+                    <select id="eq-sort" onchange="applyEquipmentFilters()">
+                        <option value="name">Sort by name</option>
+                        <option value="availability-low">Lowest availability</option>
+                        <option value="availability-high">Highest availability</option>
+                        <option value="utilization-high">Highest utilization</option>
+                    </select>
+                </div>
+                <div id="equipment-summary" class="filter-summary"></div>
+            </div>
+            <div class="grid" id="equipment-list"></div>
+        </div>
+
+        <!-- ========== MY REQUESTS ========== -->
+        <div id="section-my-requests" class="section">
+            <div class="section-header">
+                <h2>My Requests</h2>
+                <button class="btn" onclick="resetMyRequestsFilters()">Clear Filters</button>
+            </div>
+            <div class="quick-filter-bar">
+                <button class="filter-chip" data-my-filter="pending" onclick="setMyRequestsQuickFilter('pending')">Pending</button>
+                <button class="filter-chip" data-my-filter="active" onclick="setMyRequestsQuickFilter('active')">Active rentals</button>
+                <button class="filter-chip" data-my-filter="overdue" onclick="setMyRequestsQuickFilter('overdue')">Overdue</button>
+                <button class="filter-chip" data-my-filter="awaiting-assessment" onclick="setMyRequestsQuickFilter('awaiting-assessment')">Awaiting assessment</button>
+                <button class="filter-chip" data-my-filter="exam" onclick="setMyRequestsQuickFilter('exam')">Exam requests</button>
+                <button class="filter-chip" data-my-filter="high-priority" onclick="setMyRequestsQuickFilter('high-priority')">High priority</button>
+            </div>
+            <div class="filter-panel">
+                <div class="filter-group">
+                    <div class="filter-group-title">Find</div>
+                    <input type="text" id="my-search" placeholder="Search equipment or project..." oninput="applyMyRequestsFilters()">
+                </div>
+                <div class="filter-group">
+                    <div class="filter-group-title">Status</div>
+                    <select id="my-status-filter" onchange="applyMyRequestsFilters()">
+                        <option value="">All statuses</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="APPROVED">Approved</option>
+                        <option value="REJECTED">Rejected</option>
+                        <option value="RENTED">Rented</option>
+                        <option value="RETURNED">Returned</option>
+                        <option value="COMPLETED">Completed</option>
+                    </select>
+                    <select id="my-timing-filter" onchange="applyMyRequestsFilters()">
+                        <option value="">All timing</option>
+                        <option value="overdue">Overdue only</option>
+                        <option value="active">Currently rented</option>
+                        <option value="exam">Exam requests</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <div class="filter-group-title">Sort</div>
+                    <select id="my-sort" onchange="applyMyRequestsFilters()">
+                        <option value="newest">Newest first</option>
+                        <option value="oldest">Oldest first</option>
+                        <option value="overdue">Overdue first</option>
+                        <option value="priority">Priority first</option>
+                    </select>
+                </div>
+                <div id="my-summary" class="filter-summary"></div>
+            </div>
+            <div id="my-requests-list"></div>
+        </div>
+
+        <!-- ========== NEW REQUEST ========== -->
+        <div id="section-new-request" class="section">
+            <h2 class="section-heading">Create Rental Request</h2>
+            <div class="card form-card">
+                <div class="form-group">
+                    <label>Equipment</label>
+                    <select id="req-equipment"></select>
+                </div>
+                <div class="form-group">
+                    <label>Start Date</label>
+                    <input type="date" id="req-start">
+                </div>
+                <div class="form-group">
+                    <label>End Date</label>
+                    <input type="date" id="req-end">
+                </div>
+                <div class="form-group">
+                    <label>Project Description</label>
+                    <textarea id="req-description" placeholder="Describe your project..."></textarea>
+                </div>
+                <div id="exam-fields">
+                    <div class="form-group">
+                        <label><input type="checkbox" id="req-exam" onchange="toggleExamFields()"> This is for an exam</label>
+                    </div>
+                    <div id="exam-extra" class="hidden">
+                        <div class="form-group">
+                            <label>Exam Date</label>
+                            <input type="date" id="req-exam-date">
+                        </div>
+                        <div class="form-group">
+                            <label>Justification</label>
+                            <textarea id="req-justification" placeholder="Explain why you need this for the exam..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-success" onclick="createRequest()">Submit Request</button>
+            </div>
+        </div>
+
+        <!-- ========== PENDING REQUESTS (Admin) ========== -->
+        <div id="section-pending-requests" class="section">
+            <div class="section-header">
+                <h2>Manage Requests</h2>
+                <button class="btn" onclick="resetManageFilters()">Clear Filters</button>
+            </div>
+            <div class="quick-filter-bar">
+                <button class="filter-chip" data-manage-filter="needs-action" onclick="setQuickFilter('needs-action')">Needs decision</button>
+                <button class="filter-chip" data-manage-filter="ready-pickup" onclick="setQuickFilter('ready-pickup')">Ready for pickup</button>
+                <button class="filter-chip" data-manage-filter="overdue" onclick="setQuickFilter('overdue')">Overdue</button>
+                <button class="filter-chip" data-manage-filter="awaiting-assessment" onclick="setQuickFilter('awaiting-assessment')">Awaiting assessment</button>
+                <button class="filter-chip" data-manage-filter="exam" onclick="setQuickFilter('exam')">Exam requests</button>
+                <button class="filter-chip" data-manage-filter="high-priority" onclick="setQuickFilter('high-priority')">High priority</button>
+            </div>
+            <div class="filter-panel">
+                <div class="filter-group">
+                    <div class="filter-group-title">Find</div>
+                    <input type="text" id="mgr-search" placeholder="Search request, user, equipment..." oninput="applyManageFilters()">
+                </div>
+                <div class="filter-group">
+                    <div class="filter-group-title">Request State</div>
+                    <select id="mgr-status-filter" onchange="applyManageFilters()">
+                        <option value="">All statuses</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="APPROVED">Approved</option>
+                        <option value="RENTED">Rented</option>
+                        <option value="RETURNED">Returned</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="REJECTED">Rejected</option>
+                    </select>
+                    <select id="mgr-action-filter" onchange="applyManageFilters()">
+                        <option value="">All work</option>
+                        <option value="needs-action">Needs action</option>
+                        <option value="overdue">Overdue only</option>
+                        <option value="exam">Exam only</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <div class="filter-group-title">People & Equipment</div>
+                    <select id="mgr-user-type-filter" onchange="applyManageFilters()">
+                        <option value="">All user types</option>
+                        <option value="STUDENT">Students</option>
+                        <option value="NON_STUDENT">Non-students</option>
+                    </select>
+                    <select id="mgr-category-filter" onchange="applyManageFilters()">
+                        <option value="">All categories</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <div class="filter-group-title">Priority & Dates</div>
+                    <select id="mgr-priority-filter" onchange="applyManageFilters()">
+                        <option value="">All priorities</option>
+                        <option value="high">High (75+)</option>
+                        <option value="medium">Medium (50-74)</option>
+                        <option value="low">Low (&lt;50)</option>
+                    </select>
+                    <input type="date" id="mgr-start-from" title="Start date from" onchange="applyManageFilters()">
+                    <input type="date" id="mgr-start-to" title="Start date to" onchange="applyManageFilters()">
+                </div>
+                <div class="filter-group">
+                    <div class="filter-group-title">Sort</div>
+                    <select id="mgr-sort" onchange="applyManageFilters()">
+                        <option value="priority">Priority first</option>
+                        <option value="overdue">Overdue first</option>
+                        <option value="due-date">Due date</option>
+                        <option value="oldest">Oldest first</option>
+                        <option value="newest">Newest first</option>
+                    </select>
+                </div>
+                <div id="manage-summary" class="manage-summary filter-summary"></div>
+            </div>
+            <div id="pending-requests-list"></div>
+        </div>
+
+        <!-- ========== ALL USERS (Admin) ========== -->
+        <div id="section-all-users" class="section">
+            <div class="section-header">
+                <h2>All Users</h2>
+                <button class="btn" onclick="resetUsersFilters()">Clear Filters</button>
+            </div>
+            <div class="quick-filter-bar">
+                <button class="filter-chip" data-users-filter="students" onclick="setUsersQuickFilter('students')">Students</button>
+                <button class="filter-chip" data-users-filter="non-students" onclick="setUsersQuickFilter('non-students')">Non-students</button>
+                <button class="filter-chip" data-users-filter="admins" onclick="setUsersQuickFilter('admins')">Admins</button>
+                <button class="filter-chip" data-users-filter="reputation-risk" onclick="setUsersQuickFilter('reputation-risk')">Reputation risk</button>
+                <button class="filter-chip" data-users-filter="top-reputation" onclick="setUsersQuickFilter('top-reputation')">Top reputation</button>
+            </div>
+            <div class="filter-panel">
+                <div class="filter-group">
+                    <div class="filter-group-title">Find</div>
+                    <input type="text" id="usr-search" placeholder="Search username or email..." oninput="applyUsersFilters()">
+                </div>
+                <div class="filter-group">
+                    <div class="filter-group-title">Profile</div>
+                    <select id="usr-type-filter" onchange="applyUsersFilters()">
+                        <option value="">All types</option>
+                        <option value="STUDENT">Student</option>
+                        <option value="NON_STUDENT">Non-Student</option>
+                    </select>
+                    <select id="usr-role-filter" onchange="applyUsersFilters()">
+                        <option value="">All roles</option>
+                        <option value="ADMIN">Admin</option>
+                        <option value="USER">User</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <div class="filter-group-title">Reputation</div>
+                    <select id="usr-reputation-filter" onchange="applyUsersFilters()">
+                        <option value="">All reputation</option>
+                        <option value="top">Top (130+)</option>
+                        <option value="standard">Standard (70-129)</option>
+                        <option value="risk">Risk (&lt;70)</option>
+                    </select>
+                </div>
+                <div id="users-summary" class="filter-summary"></div>
+            </div>
+            <div id="users-table-container"></div>
+        </div>
+
+        <!-- ========== ASSESSMENTS (Admin) ========== -->
+        <div id="section-assessments" class="section">
+            <div class="section-header">
+                <h2>Return Assessments</h2>
+                <button class="btn" onclick="resetAssessmentFilters()">Clear Filters</button>
+            </div>
+            <p class="section-note">Requests with RETURNED status that need assessment:</p>
+            <div class="quick-filter-bar">
+                <button class="filter-chip" data-assessment-filter="needs-assessment" onclick="setAssessmentQuickFilter('needs-assessment')">Needs assessment</button>
+                <button class="filter-chip" data-assessment-filter="late" onclick="setAssessmentQuickFilter('late')">Late returns</button>
+                <button class="filter-chip" data-assessment-filter="on-time" onclick="setAssessmentQuickFilter('on-time')">On-time returns</button>
+                <button class="filter-chip" data-assessment-filter="positive-impact" onclick="setAssessmentQuickFilter('positive-impact')">Positive impact</button>
+                <button class="filter-chip" data-assessment-filter="negative-impact" onclick="setAssessmentQuickFilter('negative-impact')">Negative impact</button>
+                <button class="filter-chip" data-assessment-filter="damage-issues" onclick="setAssessmentQuickFilter('damage-issues')">Damage issues</button>
+            </div>
+            <div class="filter-panel">
+                <div class="filter-group">
+                    <div class="filter-group-title">Find</div>
+                    <input type="text" id="assess-search" placeholder="Search user, equipment or notes..." oninput="applyAssessmentFilters()">
+                </div>
+                <div class="filter-group">
+                    <div class="filter-group-title">Condition</div>
+                    <select id="assess-rating-filter" onchange="applyAssessmentFilters()">
+                        <option value="">All ratings</option>
+                        <option value="EXCELLENT">Excellent</option>
+                        <option value="GOOD">Good</option>
+                        <option value="FAIR">Fair</option>
+                        <option value="POOR">Poor</option>
+                        <option value="DAMAGED">Damaged</option>
+                    </select>
+                    <select id="assess-impact-filter" onchange="applyAssessmentFilters()">
+                        <option value="">All impacts</option>
+                        <option value="positive">Positive</option>
+                        <option value="neutral">Neutral</option>
+                        <option value="negative">Negative</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <div class="filter-group-title">Return Timing</div>
+                    <select id="assess-late-filter" onchange="applyAssessmentFilters()">
+                        <option value="">All history</option>
+                        <option value="late">Late returns</option>
+                        <option value="on-time">On-time returns</option>
+                    </select>
+                    <select id="assess-sort" onchange="applyAssessmentFilters()">
+                        <option value="newest">Newest first</option>
+                        <option value="impact-low">Worst impact first</option>
+                        <option value="impact-high">Best impact first</option>
+                    </select>
+                </div>
+                <div id="assess-summary" class="filter-summary"></div>
+            </div>
+            <div id="assessments-list"></div>
+        </div>
+
+        <!-- ========== STRATEGY (Admin) ========== -->
+        <div id="section-strategy" class="section">
+            <h2 class="section-heading">Prioritization Strategy</h2>
+            <div class="card content-card-narrow">
+                <p class="card-intro">Current strategy: <strong id="current-strategy"></strong></p>
+                <div class="form-group">
+                    <label>Switch Strategy</label>
+                    <select id="strategy-select">
+                        <option value="weightedScoring">Weighted Scoring</option>
+                        <option value="fifo">FIFO (First In, First Out)</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="changeStrategy()">Apply</button>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- ========== MODALS ========== -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+    <div class="modal" id="modal-content"></div>
+</div>
+
+<!-- ========== TOAST CONTAINER ========== -->
+<div id="toast-container"></div>
+
+<!-- ========== GLOBAL SPINNER ========== -->
+<div id="global-spinner" aria-hidden="true"></div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>

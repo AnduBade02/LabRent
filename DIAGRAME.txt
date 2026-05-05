@@ -1,0 +1,821 @@
+================================================================================
+LABRENT — Specificația completă a diagramelor UML pentru proiectul ISP
+Direcția B · Max. 30 puncte · Echipă de 3 studenți
+================================================================================
+
+Acest document conține specificații textuale detaliate pentru toate diagramele
+cerute de barem. Fiecare diagramă listează: actorii / clasele / nodurile,
+relațiile / tranzițiile / mesajele, precum și textul exact al etichetelor.
+Este suficient ca să o reconstrui 1-la-1 în editorul UML din laborator.
+
+CUPRINS
+-------
+PARTEA I — LUCRU ÎN ECHIPĂ (comune)
+   1. Diagrama cazurilor de utilizare
+   2. Diagrama de clase  (cele 3 relații cerute: generalizare, compoziție, asociație)
+
+PARTEA II — LUCRU INDIVIDUAL (3 membri × 2 diagrame)
+   Membru 1 — Submit Rental Request
+      3a. Diagrama de activități
+      3b. Diagrama de secvență
+   Membru 2 — Equipment Lifecycle
+      4a. Diagrama de activități
+      4b. Diagrama de stare
+   Membru 3 — Return Assessment & Reputation Update
+      5a. Diagrama de activități
+      5b. Diagrama de comunicare
+
+
+================================================================================
+PARTEA I.1 — DIAGRAMA CAZURILOR DE UTILIZARE  (echipă, comună)
+================================================================================
+
+ACTORI (oameni — actori primari)
+  Client       (corespunde rolului USER din sistem; poate fi STUDENT sau NON_STUDENT)
+  Operator     (corespunde rolului ADMIN din sistem; staff-ul laboratorului)
+
+ACTORI SECUNDARI (sisteme externe)
+  EmailService (SMTP — primește notificările prin Observer)
+
+CAZURI DE UTILIZARE (ovale)
+   UC01  Register Account          (Client)
+   UC02  Login                     (Client, Operator)
+   UC03  Browse Equipment Catalog  (Client)
+   UC04  Check Equipment Availability (Client)
+   UC05  Submit Rental Request     (Client)
+   UC06  View My Requests          (Client)
+   UC07  View My Reputation        (Client)
+   UC08  Approve Rental Request    (Operator)
+   UC09  Reject Rental Request     (Operator)
+   UC10  Mark Equipment as Rented  (Operator)
+   UC11  Mark Equipment as Returned(Operator)
+   UC12  Submit Return Assessment  (Operator)
+   UC13  Manage Equipment Catalog  (Operator)        — CRUD
+   UC14  Manage Users              (Operator)
+   UC15  Switch Prioritization Strategy (Operator)   — weighted ↔ FIFO
+   UC16  View Admin Dashboard      (Operator)
+
+RELAȚII ÎNTRE CAZURI DE UTILIZARE
+   UC05 «extend» UC05a "Add Academic Urgency"
+        condition: actorul este STUDENT și marchează "isForExam"
+        — extinde UC05 cu câmpurile examDate și justification
+
+   UC12 «include» UC12a "Update User Reputation"
+   UC12 «include» UC12b "Release Equipment Unit"
+        — UC12 conține obligatoriu cele două sub-fluxuri
+   UC12 «extend» UC12c "Send Equipment to Service"
+        condition: conditionRating este DAMAGED
+
+   UC05 «include» UC05b "Calculate Priority Score"
+
+CONEXIUNI ACTOR → CAZ DE UTILIZARE
+   Client    --→  UC01, UC02, UC03, UC04, UC05, UC06, UC07
+   Operator  --→  UC02, UC08, UC09, UC10, UC11, UC12, UC13, UC14, UC15, UC16
+   EmailService ←-- (notification flows): după UC05, UC08, UC09, UC11, UC12
+
+LIMITĂ SISTEM
+   Toate UC-urile sunt incluse într-un dreptunghi etichetat "LabRent System".
+   Actorii Client și Operator sunt în afara dreptunghiului, în stânga.
+   EmailService este în afara dreptunghiului, în dreapta.
+
+SCHEMA VIZUALĂ (orientare orizontală, simplificată)
+                     ┌────────────────────────────────────────────────┐
+                     │                LabRent System                  │
+                     │                                                │
+   Client ──────────►│  ◯ Register                                    │
+                     │  ◯ Login                                       │
+                     │  ◯ Browse Equipment                            │
+                     │  ◯ Submit Rental Request ──«include»──► ◯ Calc │
+                     │           │«extend»                            │
+                     │           ▼                                    │
+                     │   ◯ Add Academic Urgency                       │
+                     │  ◯ View My Requests                            │
+                     │                                                │
+   Operator ────────►│  ◯ Approve Request                             │
+                     │  ◯ Reject Request                              │
+                     │  ◯ Mark Rented   ◯ Mark Returned               │
+                     │  ◯ Submit Return Assessment ─«include»─► ◯ Upd │
+                     │              │«extend»          «include»─► ◯ Rel│
+                     │              ▼                                 │
+                     │   ◯ Send to Service                            │
+                     │  ◯ Manage Equipment / Users                    │
+                     │  ◯ Switch Strategy   ◯ Dashboard               │──► EmailService
+                     └────────────────────────────────────────────────┘
+
+NOTĂ DE CORESPONDENȚĂ
+   În document, sub diagramă, scrie:
+   « Cazurile UC05 (Submit Rental Request), UC11 (Mark Returned) și UC12
+     (Submit Return Assessment) sunt detaliate prin diagramele de activități
+     individuale ale celor 3 membri din Partea II. »
+
+
+================================================================================
+PARTEA I.2 — DIAGRAMA DE CLASE  (echipă, comună)
+================================================================================
+
+Această diagramă conține STRICT cele 3 tipuri de relații cerute de barem:
+GENERALIZARE, COMPOZIȚIE, ASOCIAȚIE — cu indicarea explicită pe diagramă.
+
+CLASE PRINCIPALE (cu atribute și operații)
+
+┌─────────────────────────────────────────────────┐
+│ << Entity >>           User                     │
+├─────────────────────────────────────────────────┤
+│ - id : Long                                     │
+│ - username : String                             │
+│ - email : String                                │
+│ - password : String                             │
+│ - role : Role                                   │
+│ - userType : UserType                           │
+│ - reputationScore : Double = 100.0              │
+│ - createdAt : LocalDateTime                     │
+├─────────────────────────────────────────────────┤
+│ + User()                                        │
+│ + User(username, email, password, role, type)   │
+│ + getReputationScore() : Double                 │
+│ + setReputationScore(score : Double)            │
+│ + ...getters / setters                          │
+└─────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────┐
+│ << Entity >>           Equipment                │
+├─────────────────────────────────────────────────┤
+│ - id : Long                                     │
+│ - name : String                                 │
+│ - description : String                          │
+│ - category : String                             │
+│ - status : EquipmentStatus = AVAILABLE          │
+│ - totalQuantity : Integer                       │
+│ - availableQuantity : Integer                   │
+│ - createdAt : LocalDateTime                     │
+├─────────────────────────────────────────────────┤
+│ + Equipment()                                   │
+│ + Equipment(name, desc, category, totalQty)     │
+│ + getStatus() : EquipmentStatus                 │
+│ + ...getters / setters                          │
+└─────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────┐
+│ << abstract Entity >>  RentalRequest            │  ← clasa abstractă (italic)
+├─────────────────────────────────────────────────┤
+│ - id : Long                                     │
+│ - user : User                                   │
+│ - equipment : Equipment                         │
+│ - startDate : LocalDate                         │
+│ - endDate : LocalDate                           │
+│ - status : RequestStatus = PENDING              │
+│ - projectDescription : String                   │
+│ - priorityScore : Double                        │
+│ - createdAt : LocalDateTime                     │
+│ - returnedAt : LocalDate                        │
+│ - returnAssessment : ReturnAssessment           │ ← rolul în compoziție
+├─────────────────────────────────────────────────┤
+│ # RentalRequest()                               │
+│ # RentalRequest(user, equipment, start, end, …) │
+│ + builder() : Builder              {static}     │
+│ + getStatus() : RequestStatus                   │
+│ + ...getters / setters                          │
+└─────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────┐
+│ << Entity >>     StandardRentalRequest          │  ← subclasă concretă
+├─────────────────────────────────────────────────┤
+│  (fără atribute proprii)                        │
+├─────────────────────────────────────────────────┤
+│ + StandardRentalRequest()                       │
+│ + StandardRentalRequest(user, eq, start, end, …)│
+└─────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────┐
+│ << Entity >>     AcademicRentalRequest          │  ← subclasă concretă
+├─────────────────────────────────────────────────┤
+│ - examDate : LocalDate                          │
+│ - justification : String                        │
+├─────────────────────────────────────────────────┤
+│ + AcademicRentalRequest()                       │
+│ + AcademicRentalRequest(user, eq, start, end,  │
+│            …, examDate, justification)          │
+│ + getExamDate() : LocalDate                     │
+│ + getJustification() : String                   │
+└─────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────┐
+│ << Entity >>     ReturnAssessment               │
+├─────────────────────────────────────────────────┤
+│ - id : Long                                     │
+│ - rentalRequest : RentalRequest                 │
+│ - operator : User                               │
+│ - conditionRating : ConditionRating             │
+│ - notes : String                                │
+│ - reputationImpact : Double                     │
+│ - assessedAt : LocalDateTime                    │
+├─────────────────────────────────────────────────┤
+│ + ReturnAssessment()                            │
+│ + builder() : Builder              {static}     │
+│ + getConditionRating() : ConditionRating        │
+│ + ...getters / setters                          │
+└─────────────────────────────────────────────────┘
+
+ENUMS (afișați cu stereotipul «enumeration»)
+
+   «enumeration» Role          {USER, ADMIN}
+   «enumeration» UserType      {STUDENT, NON_STUDENT}
+   «enumeration» EquipmentStatus {AVAILABLE, RESERVED, RENTED, RETURNED, IN_SERVICE}
+   «enumeration» RequestStatus {PENDING, APPROVED, REJECTED, RENTED, RETURNED, COMPLETED}
+   «enumeration» ConditionRating {EXCELLENT, GOOD, FAIR, POOR, DAMAGED}
+                  (atribute: reputationImpact : double)
+
+
+CELE 3 RELAȚII CERUTE DE BAREM
+==============================
+
+(A) GENERALIZARE  (săgeată cu vârf triunghi gol ─▷)
+
+   StandardRentalRequest ────▷ RentalRequest
+   AcademicRentalRequest ────▷ RentalRequest
+
+   În cod:  class StandardRentalRequest extends RentalRequest
+            class AcademicRentalRequest extends RentalRequest
+
+   Etichetă pe diagramă: «extends» (sau doar săgeata triunghi gol).
+   Multiplicitate: nu se aplică (relație de moștenire).
+
+(B) COMPOZIȚIE  (linie cu romb plin ◆── la capătul "întreg")
+
+   RentalRequest  ◆─────────── ReturnAssessment
+                  1            0..1
+                  (întreg)     (parte)
+
+   Semantica:
+     - Un RentalRequest are cel mult un ReturnAssessment.
+     - Lifecycle bound: dacă RentalRequest este șters, ReturnAssessment
+       se șterge automat (cascade=ALL, orphanRemoval=true).
+     - ReturnAssessment NU poate exista fără RentalRequest.
+
+   În cod:
+     RentalRequest.java:
+       @OneToOne(mappedBy="rentalRequest", cascade=ALL, orphanRemoval=true)
+       private ReturnAssessment returnAssessment;
+
+(C) ASOCIAȚIE  (linie simplă, opțional cu săgeată)
+
+   RentalRequest ─────────► User
+                  *    1
+                  (multe cereri pe utilizator)
+
+   RentalRequest ─────────► Equipment
+                  *    1
+
+   ReturnAssessment ──────► User
+                     *  1   (rolul "operator")
+
+   Semantica: relații de referință simplă, NU compoziție — User și Equipment
+   există independent de cererile de închiriere.
+
+   În cod:
+     @ManyToOne private User user;
+     @ManyToOne private Equipment equipment;
+     @ManyToOne private User operator;     // în ReturnAssessment
+
+
+SCHEMA VIZUALĂ (orientativă — arată doar relațiile între clase)
+
+                  ┌──────────────┐                  ┌──────────────┐
+                  │     User     │                  │   Equipment  │
+                  └──────┬───────┘                  └──────┬───────┘
+                         │ 1                               │ 1
+                         │ * (ASOCIAȚIE)                   │ *
+                         │                                 │
+                  ┌──────┴────────────────────────────────┴─────┐
+                  │      RentalRequest    {abstract}            │
+                  └───────────────┬─────────────┬───────────────┘
+                                  ▲             ▲
+                  (GENERALIZARE)  │             │  (GENERALIZARE)
+                  ┌───────────────┴─┐         ┌─┴────────────────────┐
+                  │ StandardRental  │         │  AcademicRental      │
+                  │   Request       │         │    Request           │
+                  └─────────────────┘         └──────────────────────┘
+                                  │
+                                  │  1
+                                  │  ◆ (COMPOZIȚIE)
+                                  │  0..1
+                  ┌───────────────┴────────────────────┐
+                  │      ReturnAssessment              │
+                  └────────┬───────────────────────────┘
+                           │ * → 1 (ASOCIAȚIE — rol "operator")
+                           ▼
+                  ┌─────────────────┐
+                  │      User       │   (același User reapărut ca operator)
+                  └─────────────────┘
+
+
+NOTĂ DE COMENTARIU PE DIAGRAMĂ (obligatoriu, conform barem linia 68-71)
+   « Generalizarea: StandardRentalRequest și AcademicRentalRequest extend
+     clasa abstractă RentalRequest. Persistat în DB prin
+     @Inheritance(SINGLE_TABLE) cu coloana discriminator request_type. »
+   « Compoziția RentalRequest ◆── ReturnAssessment este implementată cu
+     cascade=ALL + orphanRemoval=true; ștergerea unui Request elimină
+     automat assessment-ul corespunzător. »
+
+
+================================================================================
+PARTEA II — MEMBRU 1 — Submit Rental Request
+================================================================================
+
+CAZ DE UTILIZARE DETALIAT
+   UC05 «Submit Rental Request» (din diagrama de cazuri de utilizare).
+   În cod: RentalRequestService.createRequest(dto, username).
+
+NOTĂ DE CORESPONDENȚĂ (obligatorie, vezi barem linia 34-35)
+   « Această diagramă de activități detaliază cazul de utilizare UC05 —
+     Submit Rental Request — din diagrama de la punctul 1. »
+
+
+--------------------------------------------------------------------------------
+3a. DIAGRAMA DE ACTIVITĂȚI — Submit Rental Request
+--------------------------------------------------------------------------------
+
+NODURI
+  ● initial node
+  ◯ activity (acțiune, dreptunghi cu colțuri rotunjite)
+  ◇ decision/merge (romb)
+  ▬ fork/join (bară groasă)
+  ⊙ final node (cerc cu disc plin)
+
+PARTIȚIONARE (swimlanes — opțional dar recomandat)
+  | Client (browser) | Controller | Service | Factory | Repository | Notifier |
+
+FLUX
+
+  ●  (Start)
+  │
+  ◯ Client completează formularul de cerere
+        (equipmentId, startDate, endDate, projectDescription,
+         opțional: isForExam, examDate, justification)
+  │
+  ◯ POST /api/rental-requests
+  │
+  ◯ Controller: deserializează RentalRequestCreateDTO
+  │
+  ◯ Service: găsește User și Equipment în repository
+  │
+  ◇ {equipment.availableQuantity > 0 ?}
+  │   ─── no ──► ◯ Throw InvalidOperationException
+  │              │      ("No available units for: …")
+  │              ⊙  (End — flow termination)
+  │ yes
+  ◇ {endDate.isAfter(startDate) ?}
+  │   ─── no ──► ◯ Throw InvalidOperationException
+  │              │      ("End date must be after start date")
+  │              ⊙
+  │ yes
+  ◇ {user.userType == STUDENT && dto.isForExam ?}
+  │   ─── yes ──► ◯ Selectează AcademicRentalRequestFactory
+  │   ─── no  ──► ◯ Selectează StandardRentalRequestFactory
+  │ (merge)
+  ◯ factory.createRequest(user, equipment, dto)
+        — folosește RentalRequest.builder() (Builder pattern)
+        — Builder-ul instanțiază subclasa corectă (Standard sau Academic)
+  │
+  ◯ rentalRequestRepository.save(request)
+        — primul save: obține id și createdAt prin @PrePersist
+  │
+  ◯ priorityScore ← prioritizationService.calculatePriority(request)
+        — Strategy pattern: weightedScoring sau fifo
+  │
+  ◯ request.setPriorityScore(priorityScore)
+  │
+  ◯ rentalRequestRepository.save(request)        (al 2-lea save → persistă scorul)
+  │
+  ◯ prioritizationService.recalculateForEquipment(equipmentId)
+        — recalculează scorurile concurenților din coadă
+  │
+  ◯ notificationService.notifyRequestCreated(request)
+        — Observer pattern: trimite email
+  │
+  ◯ Returnează RentalRequestDTO către Client (HTTP 200)
+  │
+  ⊙  (End)
+
+POSIBILE EXCEPȚII (terminale)
+  - InvalidOperationException("No available units for: …")
+  - InvalidOperationException("End date must be after start date")
+  - ResourceNotFoundException("User", …)         (din userService.findEntityByUsername)
+  - ResourceNotFoundException("Equipment", …)    (din equipmentService.findEntityById)
+
+VARIANTE TESTATE PRIN JUNIT (cerința 10)
+  → SubmitRentalRequestActivityTest acoperă:
+     • factorySelectionMatchesActivityDiagramDecision (4 combinații)
+     • stockDecisionGate (3 combinații pe ramura "stock disponibil")
+     • dateRangeDecisionGate (3 combinații pe ramura "interval valid")
+
+
+--------------------------------------------------------------------------------
+3b. DIAGRAMA DE SECVENȚĂ — Submit Rental Request
+--------------------------------------------------------------------------------
+
+LIFELINES (obiecte)
+  :Client     :Controller     :RentalRequestService    :UserService
+  :EquipmentService           :Factory                 :PrioritizationService
+  :RentalRequestRepository    :NotificationService
+
+NUMEROTAREA MESAJELOR (axa timpului = vertical, sus → jos)
+
+  1.  :Client            ──→ :Controller        : POST /api/rental-requests (dto)
+  2.  :Controller        ──→ :Service           : createRequest(dto, username)
+  3.  :Service           ──→ :UserService       : findEntityByUsername(username)
+  3a. :UserService       ──→ :Service           : User
+  4.  :Service           ──→ :EquipmentService  : findEntityById(equipmentId)
+  4a. :EquipmentService  ──→ :Service           : Equipment
+
+  alt [equipment.availableQuantity == 0]
+  5x.   :Service        ──→ :Client            : InvalidOperationException
+  end alt
+
+  alt [endDate <= startDate]
+  6x.   :Service        ──→ :Client            : InvalidOperationException
+  end alt
+
+  alt [user.STUDENT && dto.isForExam]
+  7a. :Service          ──→ :AcademicFactory   : createRequest(user, eq, dto)
+  7b. :AcademicFactory  ──→ :Service           : AcademicRentalRequest
+  else
+  7c. :Service          ──→ :StandardFactory   : createRequest(user, eq, dto)
+  7d. :StandardFactory  ──→ :Service           : StandardRentalRequest
+  end alt
+
+  8.  :Service           ──→ :Repository        : save(request)
+  8a. :Repository        ──→ :Service           : RentalRequest (with id)
+  9.  :Service           ──→ :Prioritization    : calculatePriority(request)
+  9a. :Prioritization    ──→ :Service           : double score
+  10. :Service           ──→ :Repository        : save(request)        // with score
+  11. :Service           ──→ :Prioritization    : recalculateForEquipment(eqId)
+  12. :Service           ──→ :Notification      : notifyRequestCreated(request)
+  13. :Notification      ──→ :EmailListener     : onRequestCreated(request)
+  14. :Service           ──→ :Controller        : RentalRequestDTO
+  15. :Controller        ──→ :Client            : HTTP 200 + DTO
+
+NOTAȚII SPECIALE PE DIAGRAMĂ
+  - frame "alt" pentru cele 3 ramuri condiționale (stock, date, factory)
+  - activation bars (dreptunghiuri verticale subțiri) pe lifeline-uri în
+    timpul execuției
+  - "self-call" pe :Service la calculul scorului dacă vrei detaliere
+  - mesaje de retur cu linie întreruptă (──>)
+
+
+================================================================================
+PARTEA II — MEMBRU 2 — Equipment Lifecycle
+================================================================================
+
+CAZ DE UTILIZARE DETALIAT
+   Subset compus din UC08 (Approve), UC10 (Mark Rented), UC11 (Mark Returned),
+   UC12 (Submit Assessment) — privind tranzițiile de stare ale Equipment.
+   În cod: EquipmentService.reserveUnit / releaseUnit + State pattern în
+   model/state/*.
+
+NOTĂ DE CORESPONDENȚĂ (obligatorie)
+   « Această diagramă de activități detaliază ciclul de viață al Equipment-ului
+     pe parcursul cazurilor de utilizare UC08, UC10, UC11, UC12 din diagrama
+     de la punctul 1. Diagrama de stare de la punctul 4b descrie aceeași
+     mașină de stări, dar centrată pe clasa Equipment. »
+
+
+--------------------------------------------------------------------------------
+4a. DIAGRAMA DE ACTIVITĂȚI — Equipment Lifecycle
+--------------------------------------------------------------------------------
+
+PARTIȚIONARE (swimlanes recomandate)
+  | Client | Operator | EquipmentService | EquipmentState |
+
+FLUX (cu starea curentă a Equipment evidențiată în paranteze drepte)
+
+  ●  (Start)
+  │
+  ◯ Equipment creat în catalog       [STATE = AVAILABLE]
+  │
+  ◇ {Există cerere PENDING aprobată ?}
+  │   ─── no ──► (rămâne în AVAILABLE — așteaptă)
+  │ yes
+  ◯ Operator: Approve Request
+  │
+  ◯ EquipmentService.reserveUnit(id)
+        — decrementează availableQuantity
+        — dacă availableQuantity == 0 → tranziție de stare
+  │
+  ◇ {availableQuantity == 0 ?}
+  │   ─── yes ──► ◯ AvailableState.reserve(equipment)   [STATE = RESERVED]
+  │   ─── no  ──► (status rămâne AVAILABLE)
+  │ (merge)
+  ◯ Operator: Mark as Rented
+  │
+  ◯ ReservedState.rent(equipment)                       [STATE = RENTED]
+  │
+  ◯ Client folosește echipamentul …
+  │
+  ◯ Operator: Mark as Returned
+  │
+  ◯ RentedState.returnEquipment(equipment)              [STATE = RETURNED]
+  │
+  ◯ Operator: Submit Return Assessment (UC12)
+  │
+  ◇ {conditionRating == DAMAGED ?}
+  │   ─── yes ──► ◯ ReturnedState.sendToService(equipment)
+  │              │       [STATE = IN_SERVICE]
+  │              │
+  │              ◯ Tehnician repară echipamentul
+  │              │
+  │              ◯ InServiceState.makeAvailable(equipment)
+  │              │       [STATE = AVAILABLE]
+  │   ─── no  ──► ◯ ReturnedState.makeAvailable(equipment)
+  │                       [STATE = AVAILABLE]
+  │ (merge)
+  ◯ EquipmentService.releaseUnit(id)
+        — incrementează availableQuantity
+  │
+  ⊙  (End — echipamentul e din nou disponibil pentru altă cerere)
+
+VARIANTE TESTATE
+  → EquipmentLifecycleActivityTest acoperă:
+     • 7 tranziții valide (parametrizat)
+     • 18 tranziții invalide → InvalidOperationException
+     • happy-path lifecycle complet
+     • damaged-return branch (UN_SERVICE → AVAILABLE)
+
+
+--------------------------------------------------------------------------------
+4b. DIAGRAMA DE STARE — Equipment
+--------------------------------------------------------------------------------
+
+CLASA DESCRISĂ
+   Equipment (clasa pentru care sunt descrise stările)
+   Stările provin din enum-ul EquipmentStatus.
+
+NOTĂ DE COMENTARIU (obligatorie, vezi barem linia 71)
+   « Această diagramă de stare descrie ciclul de viață al instanțelor clasei
+     Equipment, codificat prin enum-ul EquipmentStatus și implementat prin
+     pattern-ul State (interfața EquipmentState + cele 5 clase concrete). »
+
+NODURI
+  ●     (initial pseudo-state)
+  □     (state, dreptunghi cu colțuri rotunjite)
+  ⊙     (final state — opțional)
+
+STĂRI
+   AVAILABLE
+   RESERVED
+   RENTED
+   RETURNED
+   IN_SERVICE
+
+TRANZIȚII (sintaxa: trigger / [guard] / action)
+
+  ●                ──────────────────►  AVAILABLE
+                                        (initial, la creare)
+
+  AVAILABLE        ──reserve()────────► RESERVED
+                                        / availableQuantity--
+
+  RESERVED         ──rent()───────────► RENTED
+  RESERVED         ──makeAvailable()──► AVAILABLE       (cancel reservation)
+
+  RENTED           ──returnEquipment()─► RETURNED
+
+  RETURNED         ──makeAvailable()──► AVAILABLE       [conditionRating ≠ DAMAGED]
+                                        / availableQuantity++
+  RETURNED         ──sendToService()──► IN_SERVICE      [conditionRating == DAMAGED]
+
+  IN_SERVICE       ──makeAvailable()──► AVAILABLE       (după reparație)
+                                        / availableQuantity++
+
+SCHEMA VIZUALĂ
+
+       ●
+       │
+       ▼
+  ┌─────────────┐    reserve()      ┌─────────────┐    rent()       ┌──────────┐
+  │  AVAILABLE  │ ─────────────────► │  RESERVED   │ ──────────────► │  RENTED  │
+  └─────────────┘                    └─────────────┘                 └────┬─────┘
+       ▲                                  │                               │ returnEquipment()
+       │                makeAvailable()   │                               │
+       │              (cancel)            │                               ▼
+       │ ◄────────────────────────────────┘                         ┌──────────┐
+       │                                                            │ RETURNED │
+       │ makeAvailable() [good]                                     └────┬─────┘
+       ├───────────────────────────────────────────────────────────────┘
+       │                                                                 │
+       │                                       sendToService() [damaged] │
+       │                                                                 ▼
+       │                                                          ┌────────────┐
+       │ makeAvailable() [repaired]                              │ IN_SERVICE │
+       └─────────────────────────────────────────────────────────│            │
+                                                                  └────────────┘
+
+CORESPONDENȚĂ COD ↔ DIAGRAMĂ
+   - Fiecare stare ↔ o clasă concretă în model/state/:
+       AvailableState, ReservedState, RentedState, ReturnedState, InServiceState
+   - Fiecare tranziție ↔ o metodă din interfața EquipmentState.
+   - Tranzițiile inexistente în clasa de stare ↔ aruncă InvalidOperationException
+     (default behavior din interface).
+
+
+================================================================================
+PARTEA II — MEMBRU 3 — Return Assessment & Reputation Update
+================================================================================
+
+CAZ DE UTILIZARE DETALIAT
+   UC12 «Submit Return Assessment» (din diagrama de cazuri de utilizare).
+   În cod: ReturnAssessmentService.submitAssessment(dto, operatorUsername).
+
+NOTĂ DE CORESPONDENȚĂ (obligatorie)
+   « Această diagramă de activități detaliază cazul de utilizare UC12 —
+     Submit Return Assessment — din diagrama de la punctul 1. »
+
+
+--------------------------------------------------------------------------------
+5a. DIAGRAMA DE ACTIVITĂȚI — Return Assessment & Reputation
+--------------------------------------------------------------------------------
+
+PARTIȚIONARE (swimlanes recomandate)
+  | Operator | Controller | ReturnAssessmentService | UserService
+   | EquipmentService | NotificationService |
+
+FLUX
+
+  ●  (Start)
+  │
+  ◯ Operator: deschide formul. de evaluare pt. cerere RETURNED
+  │
+  ◯ Operator: completează (rentalRequestId, conditionRating, notes)
+  │
+  ◯ POST /api/return-assessments
+  │
+  ◯ Controller: deserializează ReturnAssessmentCreateDTO
+  │
+  ◯ Service: findEntityById(rentalRequestId)
+  │
+  ◇ {request != null ?}
+  │   ─── no ──► ◯ Throw ResourceNotFoundException → ⊙
+  │ yes
+  ◇ {request.status == RETURNED ?}
+  │   ─── no ──► ◯ Throw InvalidOperationException
+  │              │      ("Can only assess requests with RETURNED status")
+  │              ⊙
+  │ yes
+  ◇ {assessment deja există pentru această cerere ?}
+  │   ─── yes ──► ◯ Throw InvalidOperationException
+  │              │      ("Assessment already exists for this request")
+  │              ⊙
+  │ no
+  ◯ Construire ReturnAssessment via Builder pattern
+        (rentalRequest, operator, conditionRating, notes)
+        — reputationImpact ← conditionRating.getReputationImpact()
+  │
+  ◯ returnAssessmentRepository.save(assessment)
+  │
+  ◯ request.setStatus(COMPLETED)        (composition în acțiune)
+  │
+  ▬ FORK (calcule paralele logice)
+  │
+  ├─◯ ratingImpact ← conditionRating.getReputationImpact()
+  │
+  └─◯ overduePenalty ← calculateOverduePenalty(request)
+        ◇ {request.returnedAt > request.endDate ?}
+        │   ─── no ──► overduePenalty = 0
+        │   ─── yes ──► daysLate = DAYS.between(endDate, returnedAt)
+        │              overduePenalty = -min(MAX_OVERDUE_PENALTY=10, daysLate)
+  │
+  ▬ JOIN
+  │
+  ◯ totalImpact ← ratingImpact + overduePenalty
+  │
+  ◯ userService.updateReputationScore(userId, totalImpact)
+        — clamp în interval [0.0, 200.0]
+  │
+  ◯ prioritizationService.recalculateForUser(userId)
+  │
+  ◯ equipmentService.releaseUnit(equipmentId)
+        — incrementează availableQuantity
+        — eventual flip status RESERVED→AVAILABLE
+  │
+  ◯ notificationService.notifyAssessmentCompleted(assessment)
+        — Observer pattern: trimite email cu rezumat
+  │
+  ◯ Returnează ReturnAssessmentDTO
+  │
+  ⊙  (End)
+
+VARIANTE TESTATE
+  → ReturnAssessmentActivityTest acoperă:
+     • matrice 5 ratings × 3 niveluri overdue (12 cazuri parametrizate)
+     • plafon overdue penalty (-10) — daysLate=50 → cap activat
+     • 5 ratings happy-path → toate side-effects-urile chemate
+     • 5 statusuri non-RETURNED → InvalidOperationException
+     • 5 ratings × duplicate detected → InvalidOperationException
+
+
+--------------------------------------------------------------------------------
+5b. DIAGRAMA DE COMUNICARE — Return Assessment
+--------------------------------------------------------------------------------
+
+NOTĂ
+   Diagrama de comunicare (collaboration) pune accent pe STRUCTURA OBIECTELOR
+   și pe legăturile dintre ele. Mesajele sunt NUMEROTATE pentru a indica
+   ordinea (în loc să le aranjezi vertical ca la sequence).
+
+OBIECTE PARTICIPANTE (dreptunghiuri etichetate cu nume:Tip)
+
+   :Operator
+   c:ReturnAssessmentController
+   s:ReturnAssessmentService
+   rrs:RentalRequestService
+   us:UserService
+   es:EquipmentService
+   ps:PrioritizationService
+   ns:NotificationService
+   rar:ReturnAssessmentRepository
+   l:EmailNotificationListener
+
+LEGĂTURI ȘI MESAJE NUMEROTATE
+
+   :Operator  ──── 1: submit(dto) ──────►  c:Controller
+   c:Controller ── 2: submitAssessment(dto, opUsername) ──► s:Service
+
+   s:Service  ──── 2.1: findEntityById(reqId) ────────►  rrs:RentalRequestService
+              ◄─── 2.1.1: RentalRequest ──────────────  rrs
+
+   s:Service  ──── 2.2: findByRentalRequestId(reqId) ──► rar:Repository
+              ◄─── 2.2.1: Optional<Assessment> ─────── rar
+
+   s:Service  ──── 2.3: findEntityByUsername(opUsername) ──► us:UserService
+              ◄─── 2.3.1: User (operator) ──────────── us
+
+   s:Service  ──── 2.4: save(newAssessment) ─────────►  rar:Repository
+              ◄─── 2.4.1: ReturnAssessment ─────────── rar
+
+   s:Service  ──── 2.5: updateReputationScore(userId, totalImpact) ──► us
+   s:Service  ──── 2.6: recalculateForUser(userId) ──► ps:Prioritization
+   s:Service  ──── 2.7: releaseUnit(equipmentId) ───►  es:EquipmentService
+
+   s:Service  ──── 2.8: notifyAssessmentCompleted(a) ──► ns:Notification
+   ns:Notification ── 2.8.1: onAssessmentCompleted(a) ──► l:EmailListener
+
+   s:Service  ──── 2.9: ReturnAssessmentDTO ──────────► c:Controller
+   c:Controller ── 3: HTTP 200 + DTO ─────────────────► :Operator
+
+SCHEMA VIZUALĂ (cu numere pe legături)
+
+           1: submit(dto)              2: submitAssessment
+   ┌────────────────────►┌─────────────┐──────────────────►┌──────────┐
+   │  :Operator          │ c:Controller│                    │ s:Service │
+   └────────────────────►└─────────────┘◄──── 2.9: DTO ──────└──────────┘
+                                                              │ 2.1, 2.2, 2.3,
+                                                              │ 2.4, 2.5, 2.6,
+                                                              │ 2.7, 2.8
+                                                              ▼
+                                              (rrs, us, es, ps, ns, rar
+                                               toate sub forma de obiecte
+                                               legate cu linii de la s)
+
+         Pe diagramă desenezi s:Service în centru, iar restul obiectelor
+         radial în jur, fiecare conectat printr-o linie etichetată cu
+         numărul mesajului.
+
+
+================================================================================
+LISTĂ DE VERIFICARE FINALĂ (înainte de predare)
+================================================================================
+
+PARTEA I — comune (echipa)
+  [ ] Diagrama cazurilor de utilizare conține: 2 actori + 16 UC + relațiile
+      «include»/«extend» enumerate
+  [ ] Diagrama de clase conține EXPLICIT cele 3 relații: generalizare
+      (RentalRequest abstract → 2 subclase), compoziție (RentalRequest ◆──
+      ReturnAssessment), asociație (RentalRequest → User, → Equipment;
+      ReturnAssessment → User)
+  [ ] Sub diagrama de clase, comentariu despre @Inheritance și cascade
+
+PARTEA II — Membru 1
+  [ ] Diagrama de activități cu titlu și mențiune "detaliază UC05"
+  [ ] Diagrama de secvență cu toate cele ~15 mesaje numerotate
+  [ ] Test JUnit: SubmitRentalRequestActivityTest (10 cazuri parametrizate)
+
+PARTEA II — Membru 2
+  [ ] Diagrama de activități cu titlu și mențiune "detaliază UC08-UC12"
+  [ ] Diagrama de stare cu cele 5 stări și 8 tranziții, cu mențiunea
+      "clasa Equipment"
+  [ ] Test JUnit: EquipmentLifecycleActivityTest (27 cazuri parametrizate)
+
+PARTEA II — Membru 3
+  [ ] Diagrama de activități cu titlu și mențiune "detaliază UC12"
+  [ ] Diagrama de comunicare cu obiecte radiale și mesaje numerotate 2.x
+  [ ] Test JUnit: ReturnAssessmentActivityTest (27 cazuri parametrizate)
+
+DOCUMENTAȚIE PDF (per student)
+  [ ] Nume, Prenume, Grupa
+  [ ] Tema: LabRent — Laboratory Equipment Inventory & Rental System
+  [ ] Partea I cu diagramele 1 și 2
+  [ ] Partea II cu cele 2 diagrame individuale + comentariile de corespondență
+  [ ] Referințe bibliografice
+  [ ] La sustinere: diagramele se deschid în editorul UML din laborator
+      (nu doar imagini — barem linia 63-64)
+================================================================================

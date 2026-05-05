@@ -1,0 +1,102 @@
+Dezvoltare bazata pe modele
+Specificare proiect la Ingineria sistemelor de programme
+Directia B
+Max. 30 puncte
+
+In prima sedinta de proiect se formeaza echipele si se alege o tema. Pentru aceasta se realizeaza
+proiectarea cu ajutorul diagramelor UML si apoi se implementeaza in Java respectand strict
+corespondenta cu modelul. Executabilitatea se demonstreaza cu ajutorul testelor unitare. Proiectul nu
+include interfata grafica si nici baza de date.
+
+Partea I - Lucru in echipa
+1. Realizati in limbajul UML diagrama cazurilor de utilizare pentru tema de proiect.
+2. Realizati in limbajul UML o diagrama de clase corespunzatoare sistemului de programe alocat. Diagrama trebuie sa contina cele 3 tipuri de relatii studiate: generalizare, compozitie, asociatie
+3. Implementati clasele conform detaliilor precizate in diagrama de clase UML.
+− Nu se cere realizarea unei interfete grafice.
+− Se depuncteaza daca nu sunt implementate si metode care sa aduca o functionalitate
+specifica aplicatiei (in plus fata de constructori, afisare, metode de tip get / set).
+− Implementarea se poate realiza si in alt mediu de dezvoltare decat Eclipse, dar acesta
+trebuie sa fie acelasi pentru toti membrii unei echipe. Daca nu se foloseste Eclipse proiectul
+va fi prezentat de pe calculatoarele personale, altfel se pot folosi calculatoarele din
+laborator.
+− Implementarea trebuie sa asigure o corespondenta stricta cu modelul UML
+4. Implementati constructori cu parametri si constructori impliciti pentru aceste clase.
+5. Implementati relatia / relatiile de generalizare dintre clase, conform diagramei de la punctul 1.
+6. Implementati relatia / relatiile de asociatie dintre clase, conform diagramei de la punctul 1.
+− La punctele 5 si 6 se puncteaza numai daca implementarea corespunde tipului de relatii
+care rezulta din diagrama de clase.
+
+Partea II - Lucru individual
+7. Fiecare student trebuie sa aleaga un caz de utilizare dintre cele definite la punctul 1 sau o
+operatie complexa a unei clase definite la punctul 2 si sa reprezinte o diagrama de activitati in
+care sa reprezinte pasii efectuati si deciziile din cadrul scenariului respectiv.
+− Se poate alege un caz de utilizare specific temei, nu unul general de tipul autentificarii.
+− Se puncteaza numai daca s-a precizat cazul de utilizare (din diagrama de la punctul 2)
+caruia ii corespunde, respectiv operatia complexa reprezentata in diagrama de clase.
+8. Fiecare student trebuie sa reprezinte inca o diagrama UML, de tip diferit, ales dintre
+urmatoarele: diagrama de stare, diagrama secventiala, diagrama de comunicare, diagrama de
+componente sau diagrama de deployment.
+9. Fiecare student trebuie sa implementeze un test folosind JUnit, care sa verifice ca s-a executat
+cu succes scenariul descris la punctul 7 prin intermediul diagramei de activitati.
+− Testul trebuie sa prezinte o functionalitate specifica temei
+− Codul sursa al proiectului se va organiza in doua pachete: unul pentru implementarea
+modelelor si altul pentru teste.
+10. Testul trebuie sa se execute automat, pentru mai multe seturi de date de test (intrari + iesiri
+asteptate) – in asa fel incat sa fie verificate toate situatiile posibile (parcurgerea tuturor buclelor,
+fortarea unor exceptii, limitele inferioare / superioare ale tablourilor etc. – conform celor
+discutate la curs).
+− Se depuncteaza daca nu trec testele, daca se implementeaza scenarii lipsite de complexitate
+(dupa cum rezulta si din diagrama de activitati) sau daca nu sunt luate in considerare
+suficiente seturi de date de test (care sa identifice situatii diferite de executie).
+− Se permite si implementarea unor teste care sa nu parcurga un caz de utilizare, ci sa verifice
+implementarea unei metode complexe (care contine mai multe instructiuni decizionale si
+repetitive).
+Precizari
+➢ Pentru membrii aceleiasi echipe, partea I legata de lucrul in echipa va fi comuna, iar partea II pentru lucrul
+individual va fi diferita.
+➢ La fiecare cerinta se pot obtine 1 pct. pentru ce s-a incarcat pe Moodle + 2 pct. pentru sustinere (demonstrarea
+functionalitatii in Eclipse si raspunsul corect la intrebari).
+➢ La evaluarea proiectului incarcat pe Moodle de catre fiecare student se pot obtine Max. 10 puncte.
+➢ La data stabilita fiecare student va incarca pe Moodle documentatia si codul sursa al proiectului.
+➢ Diagramele se vor reprezenta cu ajutorul editorului de modele UML utilizat in cadrul laboratoarelor, apoi
+vor fi inserate ca figuri intr-un document.
+➢ IMPORTANT: La predare diagramele se prezinta cu ajutorul editorului utilizat la laborator. Nu se iau
+in considerare diagramele care sunt prezentate doar ca imagini.
+➢ Documentul in format PDF si codul sursa al proiectului se vor incarca pe Moodle de catre fiecare student.
+➢ Persoanele din echipa care nu incarca pe Moodle pana la termenul comun stabilit au posibilitatea sa incarce
+tema inainte de sustinere, dar se va aplica o penalizare de 50 %
+➢ Daca exista corespondente intre diagrame acestea vor fi precizate intr-un comentariu; spre exemplu:
+o pentru diagrama de activitati – care este operatia detaliata, sau care este cazul de utilizare pe care il
+detaliaza
+o pentru o diagrama de stare – care este clasa pentru care sunt descrise starile
+➢ Diagramele de la punctele 1 si 2 vor fi comune pentru o echipa.
+➢ Diagramele de la punctele 7 si 8 reprezinta lucrul individual. Membrii echipei trebuie neaparat sa se
+consulte intre ei pentru a realiza diagrame diferite pentru punctele 7 si 8, altfel ele nefiind luate in
+considerare. Punctarea acestora va fi individuala.
+➢ Studentii care nu incarca pe Moodle tema nu pot primi nota. Documentul nu mai poate fi actualizat dupa
+data predarii.
+➢ Modelele urmeaza a fi implementate total sau partial, in functie de complexitate.
+➢ Data de predare este precizata in planificare si nu va fi amanata.
+➢ Daca la demonstrarea functionalitatii exista erori de compilare se depuncteaza tot proiectul.
+➢ Sustinerea proiectului poate fi echivalata cu inscrierea si participarea la Sesiunea de Comunicari Stiintifice
+Studentesti (SCSS) cu o lucrare bazata pe aceasta tema si cu acordul cadrului didactic indrumator al
+proiectului de la ISP. Daca lucrarea are mai multi studenti co-autori, echivalarea este posibila numai pentru
+studentii care participa la SCSS si prezinta efectiv propria contributie la acel proiect. Conditia echivalarii
+este de asemenea ca execulatibilatea proiectului sa fi fost demonstrata fie anterior, catre cadul didactic
+indrumator, fie printr-un demo la sesiunea de comunicari. Detaliile vor fi discutate si stabilite in timpul orelor
+de proiect.
+
+➢ Continut documentatie predare proiect
+1. Nume, Prenume, Grupa
+2. Tema
+3. Partea I - Lucru in echipa
+3.1 Diagrama de clase
+3.2. Diagrama cazurilor de utilizare
+4. Partea II - Lucru individual
+4.1 Diagrama de activitati
+4.2. Alta diagrama UML
+5. Referinte bibliografice
+Observatie: In locul acestei documentatii, studentii care vor participa la SCSS vor incarca
+lucrarea in formatul recomandat de SCSS. Aceasta va raspunde la toate cerintele legate de
+proiect si va contine in plus o sectiune de incadrare in stadiul actual din domeniu si o sectiune cu
+referinte bibliografice.
