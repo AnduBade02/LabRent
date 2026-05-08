@@ -14,6 +14,7 @@ import ro.atemustard.labrent.service.prioritization.PrioritizationStrategy;
 import ro.atemustard.labrent.service.prioritization.WeightedScoringStrategy;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -69,6 +70,24 @@ class PrioritizationServiceTest {
         double score = service.calculatePriority(r);
         // 50 base + 20 reputation + 5 student - 10 (2 active) = 65
         assertThat(score).isEqualTo(65.0);
+    }
+
+    @Test
+    void calculatePriority_includesWaitingAgeAndRejectedRepeatBoost() {
+        RentalRequest r = sampleRequest();
+        r.setCreatedAt(LocalDateTime.now().minusDays(10));
+        r.setProjectDescription("Oscilloscope calibration");
+        when(rentalRequestRepository.countByUserIdAndStatusIn(eq(7L), anyList())).thenReturn(0L);
+        when(rentalRequestRepository.findByEquipmentIdAndStatus(11L, RequestStatus.PENDING))
+                .thenReturn(List.of(r));
+        when(rentalRequestRepository.countByUserIdAndEquipmentIdAndStatusAndProjectDescriptionIgnoreCase(
+                7L, 11L, RequestStatus.REJECTED, "Oscilloscope calibration"))
+                .thenReturn(2L);
+
+        double score = service.calculatePriority(r);
+
+        // 50 base + 20 reputation + 5 student + 5 waiting + 6 retry = 86
+        assertThat(score).isEqualTo(86.0);
     }
 
     @Test

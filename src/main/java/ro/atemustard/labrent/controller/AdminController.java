@@ -4,10 +4,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ro.atemustard.labrent.dto.ActivityEventDTO;
 import ro.atemustard.labrent.dto.AdminDashboardDTO;
+import ro.atemustard.labrent.dto.DemoSimulationResultDTO;
 import ro.atemustard.labrent.service.ActivityFeedService;
 import ro.atemustard.labrent.service.AdminDashboardService;
+import ro.atemustard.labrent.service.DemoSimulationService;
 import ro.atemustard.labrent.service.PrioritizationService;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
@@ -18,13 +21,16 @@ public class AdminController {
     private final PrioritizationService prioritizationService;
     private final AdminDashboardService adminDashboardService;
     private final ActivityFeedService activityFeedService;
+    private final DemoSimulationService demoSimulationService;
 
     public AdminController(PrioritizationService prioritizationService,
                            AdminDashboardService adminDashboardService,
-                           ActivityFeedService activityFeedService) {
+                           ActivityFeedService activityFeedService,
+                           DemoSimulationService demoSimulationService) {
         this.prioritizationService = prioritizationService;
         this.adminDashboardService = adminDashboardService;
         this.activityFeedService = activityFeedService;
+        this.demoSimulationService = demoSimulationService;
     }
 
     @GetMapping("/prioritization-strategy")
@@ -49,7 +55,12 @@ public class AdminController {
 
     @GetMapping("/activity-feed")
     public ResponseEntity<List<ActivityEventDTO>> getActivityFeed(
-            @RequestParam(defaultValue = "20") int limit) {
+            @RequestParam(name = "limit", defaultValue = "20") int limit) {
         return ResponseEntity.ok(activityFeedService.getRecentEvents(limit));
+    }
+
+    @PostMapping("/demo-simulation/run")
+    public ResponseEntity<DemoSimulationResultDTO> runDemoSimulation(Principal principal) {
+        return ResponseEntity.ok(demoSimulationService.runThirtyDaySimulation(principal.getName()));
     }
 }

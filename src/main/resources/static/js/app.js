@@ -20,7 +20,8 @@ const state = {
     usersSortKey: 'id',
     usersSortDir: 'asc',
     activeStrategy: 'weightedScoring',
-    charts: { status: null, topUsers: null, utilization: null }
+    charts: { status: null, topUsers: null, utilization: null },
+    lastDemoSimulation: null
 };
 
 const quickFilterConflicts = {
@@ -143,11 +144,18 @@ async function api(path, options = {}) {
         if (resp.status === 204) return null;
 
         const contentType = resp.headers.get('content-type') || '';
-        const data = contentType.includes('application/json') ? await resp.json() : {};
+        let data = {};
+        let rawText = '';
+        if (contentType.includes('application/json')) {
+            data = await resp.json();
+        } else {
+            rawText = await resp.text();
+        }
         if (!resp.ok) {
-            const msg = data.validationErrors
+            const detail = data.validationErrors
                 ? Object.values(data.validationErrors).join(', ')
-                : (data.message || resp.statusText || 'Request failed');
+                : (data.message || rawText || resp.statusText || 'Request failed');
+            const msg = `${resp.status} ${resp.statusText || 'HTTP error'} on ${path}: ${detail}`;
             throw new Error(msg);
         }
         return data;
@@ -443,6 +451,108 @@ function openManageRequests(filters = {}) {
     }
     localStorage.setItem('manage_filters', JSON.stringify(saved));
     showSection('pending-requests');
+}
+
+async function runDemoSimulation() {
+    if (!confirm('Run the 30-day demo simulation? This will add demo requests, decisions and assessments to the current database.')) {
+        return;
+    }
+
+    const button = document.getElementById('demo-simulation-btn');
+    if (button) button.classList.add('loading');
+    try {
+        const result = await api('/admin/demo-simulation/run', { method: 'POST' });
+        state.lastDemoSimulation = result;
+        await loadAdminDashboard();
+        renderDemoSimulationReport(result);
+        toast(`Demo simulation completed: ${result.createdRequests} requests generated`, 'success');
+    } catch (e) {
+        toast(e.message, 'error');
+    } finally {
+        if (button) button.classList.remove('loading');
+    }
+}
+
+function renderDemoSimulationReport(result) {
+    const container = document.getElementById('demo-simulation-report');
+    if (!container || !result) return;
+
+    const reputationRows = (result.reputationChanges || []).slice(0, 8).map(change => {
+        const cls = change.delta > 0 ? 'rep-positive' : change.delta < 0 ? 'rep-negative' : 'rep-neutral';
+        return `<div class="simulation-row">
+            <span><strong>${escapeHtml(change.username)}</strong></span>
+            <span>${change.before.toFixed(1)} -> ${change.after.toFixed(1)}</span>
+            <span class="${cls}">${formatSigned(change.delta)}</span>
+        </div>`;
+    }).join('');
+
+    const snapshots = (result.prioritySnapshots || []).map(snapshot => `
+        <div class="simulation-snapshot">
+            <h4>Day ${snapshot.day} - ${escapeHtml(snapshot.equipmentName)}</h4>
+            ${snapshot.queue && snapshot.queue.length
+                ? `<div class="queue-list">${snapshot.queue.map(entry => `
+                    <div class="queue-row simulation-queue-row">
+                        <span class="queue-rank">#${entry.rank}</span>
+                        <span><strong>${escapeHtml(entry.username)}</strong> ${entry.examRequest ? '<span class="badge badge-pending">EXAM</span>' : ''}</span>
+                        <span class="priority-score ${priorityClassFor(entry.priorityScore)}">${entry.priorityScore?.toFixed(1) || 'N/A'}</span>
+                        <span class="meta">${entry.waitingDays}d wait</span>
+                        <span class="meta">${entry.previousRejectedSimilarCount} retry</span>
+                    </div>
+                `).join('')}</div>`
+                : '<p class="muted-inline">No pending queue at this snapshot.</p>'}
+        </div>
+    `).join('');
+
+    const timeline = (result.timeline || []).slice(-14).reverse().map(event => `
+        <div class="simulation-event">
+            <span class="badge badge-${simulationBadgeClass(event.type)}">D${event.day}</span>
+            <div>
+                <strong>${escapeHtml(event.type)}</strong>
+                <p>${escapeHtml(event.message)}</p>
+            </div>
+        </div>
+    `).join('');
+
+    container.innerHTML = `
+        <div class="card simulation-report">
+            <div class="card-split-header">
+                <div>
+                    <h3>30-Day Demo Simulation</h3>
+                    <p>${result.simulationStartDate} to ${result.simulationEndDate}</p>
+                </div>
+                <span class="badge badge-approved">COMPLETED</span>
+            </div>
+            <div class="simulation-summary-grid">
+                <div><strong>${result.createdRequests}</strong><span>created</span></div>
+                <div><strong>${result.approvedRequests}</strong><span>approved</span></div>
+                <div><strong>${result.rejectedRequests}</strong><span>rejected</span></div>
+                <div><strong>${result.rentedRequests}</strong><span>rented</span></div>
+                <div><strong>${result.completedAssessments}</strong><span>assessed</span></div>
+            </div>
+            <div class="simulation-columns">
+                <div>
+                    <h4>Reputation Changes</h4>
+                    ${reputationRows || '<p class="muted-inline">No reputation changes in this run.</p>'}
+                </div>
+                <div>
+                    <h4>Recent Simulated Events</h4>
+                    ${timeline || '<p class="muted-inline">No events generated.</p>'}
+                </div>
+            </div>
+            <h4 class="simulation-section-title">Priority Queue Snapshots</h4>
+            <div class="simulation-snapshot-grid">
+                ${snapshots || '<p class="muted-inline">No priority snapshots available.</p>'}
+            </div>
+        </div>
+    `;
+}
+
+function simulationBadgeClass(type) {
+    if (type === 'APPROVED' || type === 'COMPLETED') return 'approved';
+    if (type === 'REJECTED') return 'rejected';
+    if (type === 'RENTED') return 'rented';
+    if (type === 'RETRY') return 'pending';
+    return 'returned';
 }
 
 function renderStatusChart(distribution) {
@@ -2296,6 +2406,11 @@ function priorityExplanation(req) {
 }
 
 // ===== UTILITIES =====
+function formatSigned(value) {
+    if (value === null || value === undefined) return 'N/A';
+    return (value > 0 ? '+' : '') + value.toFixed(1);
+}
+
 function formatDate(dateStr) {
     if (!dateStr) return 'N/A';
     const d = new Date(dateStr);

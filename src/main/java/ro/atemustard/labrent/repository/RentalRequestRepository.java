@@ -24,6 +24,12 @@ public interface RentalRequestRepository extends JpaRepository<RentalRequest, Lo
 
     long countByUserIdAndStatusIn(Long userId, List<RequestStatus> statuses);
 
+    long countByUserIdAndEquipmentIdAndStatusAndProjectDescriptionIgnoreCase(
+            Long userId,
+            Long equipmentId,
+            RequestStatus status,
+            String projectDescription);
+
     List<RentalRequest> findByStatusOrderByPriorityScoreDesc(RequestStatus status);
 
     List<RentalRequest> findByEquipmentIdAndStatusOrderByPriorityScoreDescCreatedAtAsc(Long equipmentId, RequestStatus status);

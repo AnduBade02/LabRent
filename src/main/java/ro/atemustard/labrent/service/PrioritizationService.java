@@ -10,6 +10,8 @@ import ro.atemustard.labrent.repository.RentalRequestRepository;
 import ro.atemustard.labrent.service.prioritization.PrioritizationContext;
 import ro.atemustard.labrent.service.prioritization.PrioritizationStrategy;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
@@ -39,7 +41,11 @@ public class PrioritizationService {
     }
 
     public double calculatePriority(RentalRequest request) {
-        PrioritizationContext context = buildContext(request);
+        return calculatePriority(request, LocalDate.now());
+    }
+
+    public double calculatePriority(RentalRequest request, LocalDate scoringDate) {
+        PrioritizationContext context = buildContext(request, scoringDate);
         PrioritizationStrategy strategy = strategies.get(activeStrategyName);
         if (strategy == null) {
             throw new IllegalStateException("Unknown prioritization strategy: " + activeStrategyName);
@@ -76,34 +82,49 @@ public class PrioritizationService {
 
     @Transactional
     public void recalculateAllPending() {
+        recalculateAllPending(LocalDate.now());
+    }
+
+    @Transactional
+    public void recalculateAllPending(LocalDate scoringDate) {
         List<RentalRequest> pending = rentalRequestRepository.findByStatus(RequestStatus.PENDING);
         for (RentalRequest r : pending) {
-            r.setPriorityScore(calculatePriority(r));
+            r.setPriorityScore(calculatePriority(r, scoringDate));
         }
         rentalRequestRepository.saveAll(pending);
     }
 
     @Transactional
     public void recalculateForEquipment(Long equipmentId) {
+        recalculateForEquipment(equipmentId, LocalDate.now());
+    }
+
+    @Transactional
+    public void recalculateForEquipment(Long equipmentId, LocalDate scoringDate) {
         List<RentalRequest> pending = rentalRequestRepository
                 .findByEquipmentIdAndStatus(equipmentId, RequestStatus.PENDING);
         for (RentalRequest r : pending) {
-            r.setPriorityScore(calculatePriority(r));
+            r.setPriorityScore(calculatePriority(r, scoringDate));
         }
         rentalRequestRepository.saveAll(pending);
     }
 
     @Transactional
     public void recalculateForUser(Long userId) {
+        recalculateForUser(userId, LocalDate.now());
+    }
+
+    @Transactional
+    public void recalculateForUser(Long userId, LocalDate scoringDate) {
         List<RentalRequest> pending = rentalRequestRepository
                 .findByUserIdAndStatus(userId, RequestStatus.PENDING);
         for (RentalRequest r : pending) {
-            r.setPriorityScore(calculatePriority(r));
+            r.setPriorityScore(calculatePriority(r, scoringDate));
         }
         rentalRequestRepository.saveAll(pending);
     }
 
-    private PrioritizationContext buildContext(RentalRequest request) {
+    private PrioritizationContext buildContext(RentalRequest request, LocalDate scoringDate) {
         List<RequestStatus> activeStatuses = List.of(
                 RequestStatus.PENDING, RequestStatus.APPROVED, RequestStatus.RENTED);
 
@@ -113,6 +134,24 @@ public class PrioritizationService {
         int competingRequestCount = rentalRequestRepository
                 .findByEquipmentIdAndStatus(request.getEquipment().getId(), RequestStatus.PENDING)
                 .size();
+
+        int waitingDays = 0;
+        if (request.getStatus() == RequestStatus.PENDING && request.getCreatedAt() != null) {
+            waitingDays = (int) Math.max(0, ChronoUnit.DAYS.between(
+                    request.getCreatedAt().toLocalDate(), scoringDate));
+        }
+
+        int previousRejectedSimilarCount = 0;
+        String projectDescription = request.getProjectDescription();
+        if (projectDescription != null && !projectDescription.isBlank()) {
+            previousRejectedSimilarCount = (int) rentalRequestRepository
+                    .countByUserIdAndEquipmentIdAndStatusAndProjectDescriptionIgnoreCase(
+                            request.getUser().getId(),
+                            request.getEquipment().getId(),
+                            RequestStatus.REJECTED,
+                            projectDescription.trim()
+                    );
+        }
 
         double reputationScore = request.getUser().getReputationScore();
         boolean isStudent = request.getUser().getUserType() == UserType.STUDENT;
@@ -124,9 +163,12 @@ public class PrioritizationService {
         return new PrioritizationContext(
                 activeRequestCount,
                 competingRequestCount,
+                waitingDays,
+                previousRejectedSimilarCount,
                 reputationScore,
                 isStudent,
-                examDate
+                examDate,
+                scoringDate
         );
     }
 }

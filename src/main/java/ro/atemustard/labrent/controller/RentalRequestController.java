@@ -52,31 +52,31 @@ public class RentalRequestController {
 
     @GetMapping("/prioritized/{equipmentId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<RentalRequestDTO>> getPrioritizedRequests(@PathVariable Long equipmentId) {
+    public ResponseEntity<List<RentalRequestDTO>> getPrioritizedRequests(@PathVariable("equipmentId") Long equipmentId) {
         return ResponseEntity.ok(rentalRequestService.getPrioritizedPendingRequests(equipmentId));
     }
 
     @PutMapping("/{id}/approve")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<RentalRequestDTO> approveRequest(@PathVariable Long id) {
+    public ResponseEntity<RentalRequestDTO> approveRequest(@PathVariable("id") Long id) {
         return ResponseEntity.ok(rentalRequestService.approveRequest(id));
     }
 
     @PutMapping("/{id}/reject")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<RentalRequestDTO> rejectRequest(@PathVariable Long id) {
+    public ResponseEntity<RentalRequestDTO> rejectRequest(@PathVariable("id") Long id) {
         return ResponseEntity.ok(rentalRequestService.rejectRequest(id));
     }
 
     @PutMapping("/{id}/rent")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<RentalRequestDTO> markAsRented(@PathVariable Long id) {
+    public ResponseEntity<RentalRequestDTO> markAsRented(@PathVariable("id") Long id) {
         return ResponseEntity.ok(rentalRequestService.markAsRented(id));
     }
 
     @PutMapping("/{id}/return")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<RentalRequestDTO> markAsReturned(@PathVariable Long id) {
+    public ResponseEntity<RentalRequestDTO> markAsReturned(@PathVariable("id") Long id) {
         return ResponseEntity.ok(rentalRequestService.markAsReturned(id));
     }
 }

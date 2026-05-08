@@ -29,12 +29,12 @@ public class ReturnAssessmentController {
     }
 
     @GetMapping("/request/{requestId}")
-    public ResponseEntity<ReturnAssessmentDTO> getByRequestId(@PathVariable Long requestId) {
+    public ResponseEntity<ReturnAssessmentDTO> getByRequestId(@PathVariable("requestId") Long requestId) {
         return ResponseEntity.ok(returnAssessmentService.getAssessmentByRequestId(requestId));
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<ReturnAssessmentDTO>> getUserHistory(@PathVariable Long userId) {
+    public ResponseEntity<List<ReturnAssessmentDTO>> getUserHistory(@PathVariable("userId") Long userId) {
         return ResponseEntity.ok(returnAssessmentService.getUserAssessmentHistory(userId));
     }
 }

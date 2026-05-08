@@ -26,7 +26,7 @@ public class EquipmentController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<EquipmentDTO> getEquipmentById(@PathVariable Long id) {
+    public ResponseEntity<EquipmentDTO> getEquipmentById(@PathVariable("id") Long id) {
         return ResponseEntity.ok(equipmentService.getEquipmentById(id));
     }
 
@@ -36,7 +36,7 @@ public class EquipmentController {
     }
 
     @GetMapping("/category/{category}")
-    public ResponseEntity<List<EquipmentDTO>> getByCategory(@PathVariable String category) {
+    public ResponseEntity<List<EquipmentDTO>> getByCategory(@PathVariable("category") String category) {
         return ResponseEntity.ok(equipmentService.getByCategory(category));
     }
 
@@ -48,14 +48,14 @@ public class EquipmentController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<EquipmentDTO> updateEquipment(@PathVariable Long id,
+    public ResponseEntity<EquipmentDTO> updateEquipment(@PathVariable("id") Long id,
                                                          @Valid @RequestBody EquipmentCreateDTO dto) {
         return ResponseEntity.ok(equipmentService.updateEquipment(id, dto));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteEquipment(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteEquipment(@PathVariable("id") Long id) {
         equipmentService.deleteEquipment(id);
         return ResponseEntity.noContent().build();
     }

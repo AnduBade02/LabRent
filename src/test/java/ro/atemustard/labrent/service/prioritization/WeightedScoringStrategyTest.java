@@ -101,4 +101,26 @@ class WeightedScoringStrategyTest {
         PrioritizationContext ctx = new PrioritizationContext(0, 0, 0.0, false, null);
         assertThat(strategy.calculatePriority(request, ctx)).isEqualTo(50.0);
     }
+
+    @Test
+    void waitingAge_addsHalfPointPerDayCappedAtFifteen() {
+        PrioritizationContext tenDays = new PrioritizationContext(
+                0, 0, 10, 0, 100.0, false, null);
+        PrioritizationContext fortyDays = new PrioritizationContext(
+                0, 0, 40, 0, 100.0, false, null);
+
+        assertThat(strategy.calculatePriority(request, tenDays)).isEqualTo(75.0);
+        assertThat(strategy.calculatePriority(request, fortyDays)).isEqualTo(85.0);
+    }
+
+    @Test
+    void repeatedRejectedSimilarRequests_addSmallCappedBoost() {
+        PrioritizationContext oneRetry = new PrioritizationContext(
+                0, 0, 0, 1, 100.0, false, null);
+        PrioritizationContext manyRetries = new PrioritizationContext(
+                0, 0, 0, 6, 100.0, false, null);
+
+        assertThat(strategy.calculatePriority(request, oneRetry)).isEqualTo(73.0);
+        assertThat(strategy.calculatePriority(request, manyRetries)).isEqualTo(79.0);
+    }
 }

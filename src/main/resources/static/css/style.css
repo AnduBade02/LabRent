@@ -509,6 +509,81 @@ tr:hover { background: #e9ecef; }
 .activity-clickable { cursor: pointer; }
 .activity-clickable:hover .activity-message { color: #16213e; text-decoration: underline; }
 
+/* --- Demo simulation --- */
+.simulation-report {
+    margin-bottom: 22px;
+    border-left: 4px solid #2563eb;
+}
+.simulation-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    margin: 16px 0;
+}
+.simulation-summary-grid div {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 12px;
+}
+.simulation-summary-grid strong {
+    display: block;
+    color: var(--color-primary);
+    font-size: 1.35rem;
+}
+.simulation-summary-grid span {
+    color: #64748b;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.simulation-columns {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    gap: 18px;
+    margin-top: 8px;
+}
+.simulation-row,
+.simulation-event {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 8px 0;
+    border-bottom: 1px solid #eef2f7;
+    font-size: 0.88rem;
+}
+.simulation-event {
+    justify-content: flex-start;
+}
+.simulation-event p {
+    margin: 2px 0 0;
+}
+.simulation-section-title {
+    margin: 18px 0 10px;
+    color: var(--color-primary);
+}
+.simulation-snapshot-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr));
+    gap: 14px;
+}
+.simulation-snapshot {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 12px;
+    background: #f8fafc;
+}
+.simulation-snapshot h4,
+.simulation-columns h4 {
+    margin-bottom: 8px;
+    color: var(--color-primary);
+}
+.simulation-queue-row {
+    grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+    font-size: 0.84rem;
+}
+
 /* --- Activity feed --- */
 .activity-item {
     display: flex;
@@ -943,6 +1018,9 @@ table,
     color: #475569;
     padding: 6px 10px;
 }
+.summary-counts span {
+    gap: 4px;
+}
 .active-filter-pill {
     background: #1d4ed8;
     border-color: #1d4ed8;
@@ -1190,6 +1268,12 @@ th, td {
     }
     .queue-row .meta {
         grid-column: 1 / -1;
+    }
+    .simulation-columns {
+        grid-template-columns: 1fr;
+    }
+    .simulation-queue-row {
+        grid-template-columns: auto 1fr;
     }
     .modal {
         width: 100%;
