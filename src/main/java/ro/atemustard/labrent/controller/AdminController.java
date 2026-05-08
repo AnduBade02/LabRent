@@ -4,8 +4,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ro.atemustard.labrent.dto.ActivityEventDTO;
 import ro.atemustard.labrent.dto.AdminDashboardDTO;
+import ro.atemustard.labrent.dto.RentalRequestDTO;
 import ro.atemustard.labrent.service.ActivityFeedService;
 import ro.atemustard.labrent.service.AdminDashboardService;
+import ro.atemustard.labrent.service.DemoSimulationService;
 import ro.atemustard.labrent.service.PrioritizationService;
 
 import java.util.List;
@@ -18,13 +20,16 @@ public class AdminController {
     private final PrioritizationService prioritizationService;
     private final AdminDashboardService adminDashboardService;
     private final ActivityFeedService activityFeedService;
+    private final DemoSimulationService demoSimulationService;
 
     public AdminController(PrioritizationService prioritizationService,
                            AdminDashboardService adminDashboardService,
-                           ActivityFeedService activityFeedService) {
+                           ActivityFeedService activityFeedService,
+                           DemoSimulationService demoSimulationService) {
         this.prioritizationService = prioritizationService;
         this.adminDashboardService = adminDashboardService;
         this.activityFeedService = activityFeedService;
+        this.demoSimulationService = demoSimulationService;
     }
 
     @GetMapping("/prioritization-strategy")
@@ -51,5 +56,10 @@ public class AdminController {
     public ResponseEntity<List<ActivityEventDTO>> getActivityFeed(
             @RequestParam(defaultValue = "20") int limit) {
         return ResponseEntity.ok(activityFeedService.getRecentEvents(limit));
+    }
+
+    @PostMapping("/simulation/random-request")
+    public ResponseEntity<RentalRequestDTO> createRandomSimulationRequest() {
+        return ResponseEntity.ok(demoSimulationService.createRandomRequest());
     }
 }

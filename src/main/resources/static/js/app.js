@@ -21,6 +21,10 @@ const state = {
     usersSortKey: 'id',
     usersSortDir: 'asc',
     activeStrategy: 'weightedScoring',
+    simulationRunning: false,
+    simulationTimer: null,
+    simulationTickInFlight: false,
+    simulationCreatedCount: 0,
     charts: { status: null, topUsers: null, utilization: null }
 };
 
@@ -218,6 +222,7 @@ function saveAuth(data) {
 }
 
 function logout() {
+    stopSimulation(false);
     token = null;
     currentUser = null;
     localStorage.removeItem('jwt_token');
@@ -249,6 +254,8 @@ function enterApp() {
         examFields.classList.toggle('hidden', currentUser.userType !== 'STUDENT');
     }
 
+    if (!isAdmin) stopSimulation(false);
+    updateSimulationControls();
     showSection('dashboard');
 }
 
@@ -284,6 +291,86 @@ function showSection(name) {
         case 'pending-requests': loadPendingRequests(); break;
         case 'all-users': loadAllUsers(); break;
         case 'assessments': loadAssessments(); break;
+    }
+}
+
+// ===== DEMO SIMULATION =====
+function startSimulation() {
+    if (!currentUser || currentUser.role !== 'ADMIN' || state.simulationRunning) return;
+
+    state.simulationRunning = true;
+    state.simulationCreatedCount = 0;
+    updateSimulationControls();
+    toast('Simulation started', 'success');
+
+    runSimulationTick();
+    state.simulationTimer = setInterval(runSimulationTick, 15000);
+}
+
+function stopSimulation(showToast = true) {
+    if (state.simulationTimer) {
+        clearInterval(state.simulationTimer);
+        state.simulationTimer = null;
+    }
+    const wasRunning = state.simulationRunning;
+    state.simulationRunning = false;
+    state.simulationTickInFlight = false;
+    updateSimulationControls();
+    if (showToast && wasRunning) toast('Simulation stopped', 'info');
+}
+
+async function runSimulationTick() {
+    if (!state.simulationRunning || state.simulationTickInFlight) return;
+
+    state.simulationTickInFlight = true;
+    updateSimulationControls();
+    try {
+        const request = await api('/admin/simulation/random-request', { method: 'POST' });
+        if (!state.simulationRunning) return;
+        state.simulationCreatedCount += 1;
+        updateSimulationControls();
+        toast(`Simulation request #${request.id}: ${request.equipmentName} for ${request.username}`, 'success');
+        refreshSimulationViews();
+    } catch (e) {
+        stopSimulation(false);
+        toast('Simulation stopped: ' + e.message, 'error');
+    } finally {
+        state.simulationTickInFlight = false;
+        updateSimulationControls();
+    }
+}
+
+function updateSimulationControls() {
+    const controls = document.getElementById('simulation-controls');
+    const startBtn = document.getElementById('simulation-start-btn');
+    const status = document.getElementById('simulation-status');
+    const statusText = document.getElementById('simulation-status-text');
+    const stopBtn = document.getElementById('simulation-stop-btn');
+    if (!controls || !startBtn || !status || !statusText || !stopBtn) return;
+
+    const isAdmin = currentUser?.role === 'ADMIN';
+    controls.classList.toggle('hidden', !isAdmin);
+    startBtn.classList.toggle('hidden', !isAdmin || state.simulationRunning);
+    status.classList.toggle('hidden', !isAdmin || !state.simulationRunning);
+    stopBtn.disabled = false;
+
+    const suffix = state.simulationCreatedCount > 0
+        ? ` - ${state.simulationCreatedCount} request(s) created`
+        : '';
+    statusText.textContent = state.simulationTickInFlight
+        ? 'Simulation in progress - creating request...'
+        : 'Simulation in progress' + suffix;
+}
+
+function refreshSimulationViews() {
+    if (currentUser?.role !== 'ADMIN') return;
+    const activeId = document.querySelector('.section.active')?.id;
+    if (activeId === 'section-admin-dashboard') {
+        loadAdminDashboard();
+    } else if (activeId === 'section-pending-requests') {
+        loadPendingRequests();
+    } else if (activeId === 'section-equipment') {
+        loadEquipment();
     }
 }
 

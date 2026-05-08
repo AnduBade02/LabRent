@@ -70,6 +70,14 @@
     <header>
         <h1>LabRent</h1>
         <div class="user-info">
+            <div id="simulation-controls" class="simulation-controls admin-only hidden">
+                <button id="simulation-start-btn" class="simulation-start-btn" onclick="startSimulation()">Start Simulation</button>
+                <div id="simulation-status" class="simulation-status hidden">
+                    <span class="simulation-dot"></span>
+                    <span id="simulation-status-text">Simulation in progress</span>
+                    <button id="simulation-stop-btn" class="simulation-stop-btn" onclick="stopSimulation()">Stop Simulation</button>
+                </div>
+            </div>
             <span id="header-user"></span>
             <span id="header-role" class="badge"></span>
             <button onclick="logout()">Logout</button>

@@ -68,6 +68,41 @@ header .user-info { display: flex; align-items: center; gap: 12px; font-size: 0.
 header .user-info span { opacity: 0.8; }
 header button { background: #e94560; border: none; color: white; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; }
 header button:hover { background: #c73e54; }
+.simulation-controls,
+.simulation-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.simulation-status {
+    padding: 4px 6px 4px 10px;
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 999px;
+    background: rgba(255,255,255,0.1);
+}
+.simulation-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 4px rgba(34,197,94,0.18);
+}
+header .simulation-start-btn {
+    background: #22c55e;
+}
+header .simulation-start-btn:hover {
+    background: #16a34a;
+}
+header .simulation-stop-btn {
+    background: #f97316;
+}
+header .simulation-stop-btn:hover {
+    background: #ea580c;
+}
+header .simulation-stop-btn:disabled {
+    opacity: 0.7;
+    cursor: wait;
+}
 
 /* --- Navigation --- */
 nav {
@@ -724,6 +759,9 @@ header button {
     padding: 7px 14px;
     font-weight: 700;
 }
+.simulation-status {
+    min-height: 36px;
+}
 
 nav {
     position: sticky;
@@ -1341,6 +1379,15 @@ th, td {
     header .user-info {
         width: 100%;
         justify-content: flex-start;
+    }
+    .simulation-controls,
+    .simulation-status {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    .simulation-start-btn,
+    .simulation-stop-btn {
+        width: auto;
     }
     nav button {
         padding: 11px 14px;
