@@ -9,6 +9,7 @@ const state = {
     usersCache: [],
     requestsCache: [],
     myRequestsCache: [],
+    equipmentRequestMap: {},
     assessmentQueueCache: [],
     assessmentHistoryCache: [],
     myQueuePositions: {},
@@ -54,12 +55,12 @@ const quickFilterConflicts = {
         'top-reputation': ['reputation-risk']
     },
     assessment: {
-        'needs-assessment': ['positive-impact', 'negative-impact', 'damage-issues'],
+        'needs-assessment': [],
         'late': ['on-time'],
         'on-time': ['late'],
-        'positive-impact': ['needs-assessment', 'negative-impact', 'damage-issues'],
-        'negative-impact': ['needs-assessment', 'positive-impact'],
-        'damage-issues': ['needs-assessment', 'positive-impact']
+        'positive-impact': ['negative-impact', 'damage-issues'],
+        'negative-impact': ['positive-impact'],
+        'damage-issues': ['positive-impact']
     }
 };
 
@@ -239,6 +240,9 @@ function enterApp() {
     document.querySelectorAll('.admin-only').forEach(el => {
         el.classList.toggle('hidden', !isAdmin);
     });
+    document.querySelectorAll('.user-only').forEach(el => {
+        el.classList.toggle('hidden', isAdmin);
+    });
 
     const examFields = document.getElementById('exam-fields');
     if (examFields) {
@@ -251,6 +255,10 @@ function enterApp() {
 // ===== NAVIGATION =====
 function showSection(name) {
     const isAdmin = currentUser && currentUser.role === 'ADMIN';
+    if (isAdmin && ['my-requests', 'new-request'].includes(name)) {
+        showSection('dashboard');
+        return;
+    }
     // Admin sees the admin dashboard when clicking "Dashboard"
     const targetId = (name === 'dashboard' && isAdmin)
         ? 'section-admin-dashboard'
@@ -276,7 +284,6 @@ function showSection(name) {
         case 'pending-requests': loadPendingRequests(); break;
         case 'all-users': loadAllUsers(); break;
         case 'assessments': loadAssessments(); break;
-        case 'strategy': loadStrategy(); break;
     }
 }
 
@@ -556,8 +563,18 @@ function activityIconClass(type) {
 // ===== EQUIPMENT =====
 async function loadEquipment() {
     try {
-        const list = await api('/equipment');
+        const isAdmin = currentUser?.role === 'ADMIN';
+        const [list, myRequests] = await Promise.all([
+            api('/equipment'),
+            isAdmin ? Promise.resolve([]) : api('/rental-requests/my')
+        ]);
         state.equipmentCache = list;
+        if (!isAdmin) {
+            state.myRequestsCache = myRequests;
+            state.equipmentRequestMap = buildEquipmentRequestMap(myRequests);
+        } else {
+            state.equipmentRequestMap = {};
+        }
 
         const catSet = new Set(list.map(e => e.category).filter(Boolean));
         const catSelect = document.getElementById('eq-category-filter');
@@ -609,16 +626,19 @@ function applyEquipmentFilters() {
     }
     container.innerHTML = filtered.map(eq => {
         const scarce = eq.availableQuantity > 0 && eq.availableQuantity <= Math.max(1, Math.ceil(eq.totalQuantity * 0.25));
-        const utilization = eq.totalQuantity ? Math.round(((eq.totalQuantity - eq.availableQuantity) / eq.totalQuantity) * 100) : 0;
+        const requestState = getEquipmentRequestState(eq.id);
+        const requestLabel = requestState
+            ? `<span class="equipment-status-corner ${requestState.labelClass}">${requestState.label}</span>`
+            : '';
         return `
-        <div class="card equipment-card" onclick="showEquipmentDetailModal(${eq.id})">
+        <div class="card equipment-card ${requestState?.cardClass || ''}" onclick="showEquipmentDetailModal(${eq.id})">
+            ${requestLabel}
             <h3>${eq.name}</h3>
             <p>${eq.description || 'No description'}</p>
             <p><strong>Category:</strong> ${eq.category}</p>
             <p><strong>Available:</strong> ${eq.availableQuantity} / ${eq.totalQuantity}
                <span class="badge badge-${eq.status.toLowerCase()}">${eq.status}</span>
                ${scarce ? '<span class="badge badge-overdue">LOW STOCK</span>' : ''}</p>
-            <p><strong>Utilization:</strong> ${utilization}%</p>
             <p class="meta">Added: ${formatDate(eq.createdAt)}</p>
             ${currentUser.role === 'ADMIN' ? `
                 <div class="actions" onclick="event.stopPropagation()">
@@ -628,6 +648,71 @@ function applyEquipmentFilters() {
             ` : ''}
         </div>
     `; }).join('');
+}
+
+function buildEquipmentRequestMap(requests) {
+    return (requests || []).reduce((map, request) => {
+        if (!map[request.equipmentId]) map[request.equipmentId] = [];
+        map[request.equipmentId].push(request);
+        map[request.equipmentId].sort((a, b) => isNewerRequest(a, b) ? -1 : 1);
+        return map;
+    }, {});
+}
+
+function isNewerRequest(candidate, current) {
+    const candidateTime = new Date(candidate.createdAt || 0).getTime();
+    const currentTime = new Date(current.createdAt || 0).getTime();
+    if (candidateTime !== currentTime) return candidateTime > currentTime;
+    return (candidate.id || 0) > (current.id || 0);
+}
+
+function getEquipmentRequestState(equipmentId) {
+    if (currentUser?.role === 'ADMIN') return null;
+    const requests = state.equipmentRequestMap[equipmentId] || [];
+    if (requests.length === 0) return null;
+
+    const currentRental = requests.find(request => request.status === 'RENTED');
+    if (currentRental) {
+        if (currentRental.overdue) {
+            return {
+                cardClass: 'equipment-card-overdue',
+                labelClass: 'equipment-status-danger',
+                label: 'Overdue'
+            };
+        }
+        return {
+            cardClass: 'equipment-card-currently-rented',
+            labelClass: 'equipment-status-info',
+            label: 'CURRENTLY RENTED'
+        };
+    }
+
+    const request = requests[0];
+    if (request.status === 'REJECTED') {
+        return {
+            cardClass: 'equipment-card-refused',
+            labelClass: 'equipment-status-danger',
+            label: 'REFUSED'
+        };
+    }
+
+    if (request.status === 'PENDING') {
+        return {
+            cardClass: 'equipment-card-pending',
+            labelClass: 'equipment-status-warning',
+            label: 'PENDING REQUEST'
+        };
+    }
+
+    if (request.status === 'APPROVED') {
+        return {
+            cardClass: 'equipment-card-approved',
+            labelClass: 'equipment-status-success',
+            label: 'APPROVED'
+        };
+    }
+
+    return null;
 }
 
 function renderEquipmentFilterState(count) {
@@ -643,7 +728,7 @@ function renderEquipmentFilterState(count) {
     if (search) filters.push({ id: 'eq-search', label: `Search: ${search}` });
     if (category) filters.push({ id: 'eq-category-filter', label: `Category: ${category}` });
     if (availability) filters.push({ id: 'eq-availability-filter', label: `Availability: ${labelForValue(availability)}` });
-    if (sort !== 'name') filters.push({ id: 'eq-sort', label: `Sort: ${labelForValue(sort)}` });
+    if (sort !== 'name') filters.push({ id: 'eq-sort', label: `Sort: ${equipmentSortLabel(sort)}` });
     state.equipmentQuickFilters.forEach(name => {
         filters.push({ id: `quick:${name}`, label: `Quick: ${equipmentQuickFilterLabel(name)}` });
     });
@@ -709,9 +794,18 @@ function equipmentQuickFilterLabel(name) {
         'available': 'Available',
         'scarce': 'Low stock',
         'out-of-stock': 'Out of stock',
-        'high-utilization': 'High utilization'
+        'high-utilization': 'Most rented'
     };
     return labels[name] || labelForValue(name);
+}
+
+function equipmentSortLabel(sort) {
+    const labels = {
+        'availability-low': 'Lowest availability',
+        'availability-high': 'Highest availability',
+        'utilization-high': 'Most rented'
+    };
+    return labels[sort] || labelForValue(sort);
 }
 
 function removeEquipmentFilter(id) {
@@ -740,40 +834,77 @@ function resetEquipmentFilters() {
 async function showEquipmentDetailModal(id) {
     try {
         const eq = state.equipmentCache.find(e => e.id === id) || await api('/equipment/' + id);
-        let queueHtml = '<p class="muted-inline">No pending requests in queue.</p>';
-        let strategyHtml = '';
-        try {
-            const [queue, strategy] = await Promise.all([
-                api('/rental-requests/prioritized/' + id),
-                api('/admin/prioritization-strategy')
-            ]);
-            strategyHtml = `<p class="meta">Active strategy: <strong>${strategy.strategy}</strong></p>`;
-            if (queue.length > 0) {
-                queueHtml = `<div class="queue-list">${queue.map((r, i) => `
-                    <div class="queue-row">
-                        <span class="queue-rank">#${i + 1}</span>
-                        <span><strong>${r.username}</strong> (${r.userType || 'USER'})</span>
-                        <span class="priority-score ${priorityClassFor(r.priorityScore)}">${r.priorityScore?.toFixed(1) || 'N/A'}</span>
-                        ${r.isForExam ? '<span class="badge badge-pending">EXAM</span>' : ''}
-                        <span class="meta">${r.startDate} to ${r.endDate}</span>
-                    </div>
-                `).join('')}</div>`;
-            }
-        } catch (e) { /* queue may be admin-only; keep empty */ }
+        const isAdmin = currentUser?.role === 'ADMIN';
+        let queueSectionHtml = '';
 
-        const utilization = eq.totalQuantity ? Math.round(((eq.totalQuantity - eq.availableQuantity) / eq.totalQuantity) * 100) : 0;
+        if (isAdmin) {
+            let queueHtml = '<p class="muted-inline">No pending requests in queue.</p>';
+            let strategyHtml = '';
+            try {
+                const [queue, strategy] = await Promise.all([
+                    api('/rental-requests/prioritized/' + id),
+                    api('/admin/prioritization-strategy')
+                ]);
+                strategyHtml = `<p class="meta">Active strategy: <strong>${strategyDisplayName(strategy.strategy)}</strong></p>`;
+                if (queue.length > 0) {
+                    queueHtml = `<div class="queue-list">${queue.map((r, i) => `
+                        <div class="queue-row">
+                            <span class="queue-rank">#${i + 1}</span>
+                            <span><strong>${r.username}</strong> (${r.userType || 'USER'})</span>
+                            <span class="priority-score ${priorityClassFor(r.priorityScore)}">${r.priorityScore?.toFixed(1) || 'N/A'}</span>
+                            ${r.isForExam ? '<span class="badge badge-pending">EXAM</span>' : ''}
+                            <span class="meta">${r.startDate} to ${r.endDate}</span>
+                        </div>
+                    `).join('')}</div>`;
+                }
+            } catch (e) {
+                queueHtml = '<p class="muted-inline">Priority queue could not be loaded.</p>';
+            }
+            queueSectionHtml = `
+                <hr class="content-divider">
+                <h3 class="modal-section-title">Priority Queue</h3>
+                ${strategyHtml}
+                ${queueHtml}
+            `;
+        } else {
+            let userQueueHtml = '<p class="muted-inline">You do not have a pending request for this equipment. Create a request to join its queue.</p>';
+            let userStatusHtml = '';
+            try {
+                const [myRequests, positions, queueDetails] = await Promise.all([
+                    api('/rental-requests/my'),
+                    api('/rental-requests/my-queue-positions'),
+                    api('/rental-requests/my-queue-details')
+                ]);
+                state.myRequestsCache = myRequests;
+                state.equipmentRequestMap = buildEquipmentRequestMap(myRequests);
+                state.myQueuePositions = positions || {};
+                userStatusHtml = renderEquipmentUserStatus(id, myRequests);
+                const pendingForEquipment = myRequests.filter(r => r.equipmentId === id && r.status === 'PENDING');
+                if (pendingForEquipment.length > 0) {
+                    userQueueHtml = `<div class="queue-list">${pendingForEquipment.map(r => `
+                        ${renderUserQueuePosition(r, queueDetails?.[r.id] || null)}
+                    `).join('')}</div>`;
+                }
+            } catch (e) {
+                userQueueHtml = '<p class="muted-inline">Your queue position could not be loaded.</p>';
+            }
+            queueSectionHtml = `
+                <hr class="content-divider">
+                ${userStatusHtml}
+                <h3 class="modal-section-title">Your Queue Position</h3>
+                <p class="meta">The full priority queue is visible to operators. Your own pending position is shown here when you have joined this equipment queue.</p>
+                ${userQueueHtml}
+            `;
+        }
+
         openModal(`
             <h3>${eq.name}</h3>
             <p>${eq.description || 'No description'}</p>
             <p><strong>Category:</strong> ${eq.category}</p>
             <p><strong>Status:</strong> <span class="badge badge-${eq.status.toLowerCase()}">${eq.status}</span></p>
             <p><strong>Available:</strong> ${eq.availableQuantity} / ${eq.totalQuantity}</p>
-            <p><strong>Utilization:</strong> ${utilization}%</p>
             <p class="meta">Added: ${formatDate(eq.createdAt)}</p>
-            <hr class="content-divider">
-            <h3 class="modal-section-title">Priority Queue</h3>
-            ${strategyHtml}
-            ${queueHtml}
+            ${queueSectionHtml}
             <div class="actions">
                 <button class="btn" onclick="closeModal()">Close</button>
             </div>
@@ -781,6 +912,77 @@ async function showEquipmentDetailModal(id) {
     } catch (e) {
         toast(e.message, 'error');
     }
+}
+
+function renderUserQueuePosition(request, queueDetail) {
+    const position = queueDetail?.position || state.myQueuePositions[request.id] || '?';
+    const total = queueDetail?.total || '?';
+    return `
+        <div class="queue-position-card">
+            <div class="queue-position-rank">
+                <span>#${position}</span>
+                <small>of ${total}</small>
+            </div>
+            <div class="queue-position-main">
+                <strong>Request #${request.id}</strong>
+                <span>Position in this equipment's pending priority queue</span>
+            </div>
+            <div class="queue-position-detail">
+                <span>Priority</span>
+                <strong class="priority-score ${priorityClassFor(request.priorityScore)}">${request.priorityScore?.toFixed(1) || 'N/A'}</strong>
+            </div>
+            <div class="queue-position-detail">
+                <span>Period</span>
+                <strong>${request.startDate} to ${request.endDate}</strong>
+            </div>
+            ${request.isForExam ? '<span class="badge badge-pending">EXAM</span>' : ''}
+        </div>
+    `;
+}
+
+function renderEquipmentUserStatus(equipmentId, requests) {
+    const relevant = (requests || []).filter(r => r.equipmentId === equipmentId);
+    if (relevant.length === 0) return '';
+
+    const currentRental = relevant.find(r => r.status === 'RENTED');
+    const latest = [...relevant].sort((a, b) => isNewerRequest(a, b) ? -1 : 1)[0];
+    const request = currentRental || latest;
+    if (!request || ['RETURNED', 'COMPLETED'].includes(request.status)) return '';
+
+    let tone = 'info';
+    let title = request.status;
+    let message = `Request #${request.id}, ${request.startDate} to ${request.endDate}.`;
+
+    if (request.status === 'RENTED' && request.overdue) {
+        tone = 'danger';
+        title = 'OVERDUE';
+        message = `Request #${request.id} is currently rented to you and is ${request.daysOverdue || 0} day(s) overdue.`;
+    } else if (request.status === 'RENTED') {
+        title = 'CURRENTLY RENTED';
+        message = `Request #${request.id} is currently rented to you until ${request.endDate}.`;
+    } else if (request.status === 'APPROVED') {
+        tone = 'success';
+        title = 'APPROVED';
+        message = `Request #${request.id} has been approved and is ready to be handed out.`;
+    } else if (request.status === 'REJECTED') {
+        tone = 'danger';
+        title = 'REFUSED';
+        message = `Your latest request for this equipment was refused. Request #${request.id}, ${request.startDate} to ${request.endDate}.`;
+    } else if (request.status === 'PENDING') {
+        tone = 'warning';
+        title = 'PENDING REQUEST';
+        message = `Request #${request.id} is waiting in this equipment queue.`;
+    }
+
+    return `
+        <div class="equipment-user-status equipment-user-status-${tone}">
+            <div>
+                <span>Your Current Status</span>
+                <strong>${title}</strong>
+            </div>
+            <p>${message}</p>
+        </div>
+    `;
 }
 
 function showAddEquipmentModal() {
@@ -1128,6 +1330,7 @@ async function loadPendingRequests() {
         ]);
         state.requestsCache = list;
         state.activeStrategy = strategyData.strategy;
+        updateStrategyControls(state.activeStrategy);
         populateManageCategoryFilter(list);
         restoreManageFilters();
         applyManageFilters();
@@ -1553,11 +1756,11 @@ function applyUsersFilters() {
     if (search) list = list.filter(u =>
         u.username.toLowerCase().includes(search) ||
         u.email.toLowerCase().includes(search));
-    if (typeFilter) list = list.filter(u => u.userType === typeFilter);
+    if (typeFilter) list = list.filter(u => u.role === 'USER' && u.userType === typeFilter);
     if (roleFilter) list = list.filter(u => u.role === roleFilter);
-    if (reputationFilter === 'top') list = list.filter(u => u.reputationScore >= 130);
-    if (reputationFilter === 'standard') list = list.filter(u => u.reputationScore >= 70 && u.reputationScore < 130);
-    if (reputationFilter === 'risk') list = list.filter(u => u.reputationScore < 70);
+    if (reputationFilter === 'top') list = list.filter(u => u.role === 'USER' && u.reputationScore >= 130);
+    if (reputationFilter === 'standard') list = list.filter(u => u.role === 'USER' && u.reputationScore >= 70 && u.reputationScore < 130);
+    if (reputationFilter === 'risk') list = list.filter(u => u.role === 'USER' && u.reputationScore < 70);
     if (state.usersQuickFilters.length > 0) {
         list = list.filter(u => state.usersQuickFilters.every(name => usersQuickFilterMatches(u, name)));
     }
@@ -1565,7 +1768,12 @@ function applyUsersFilters() {
     const key = state.usersSortKey;
     const dir = state.usersSortDir === 'asc' ? 1 : -1;
     list.sort((a, b) => {
-        const av = a[key], bv = b[key];
+        if (key === 'reputationScore' && a.role !== b.role) {
+            if (a.role === 'ADMIN') return 1;
+            if (b.role === 'ADMIN') return -1;
+        }
+        const av = key === 'userType' ? displayUserType(a) : key === 'reputationScore' ? reputationSortValue(a) : a[key];
+        const bv = key === 'userType' ? displayUserType(b) : key === 'reputationScore' ? reputationSortValue(b) : b[key];
         if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
         return String(av).localeCompare(String(bv)) * dir;
     });
@@ -1596,14 +1804,26 @@ function applyUsersFilters() {
                         <td><strong>${u.username}</strong></td>
                         <td>${u.email}</td>
                         <td><span class="badge badge-${u.role === 'ADMIN' ? 'approved' : 'rented'}">${u.role}</span></td>
-                        <td>${u.userType}</td>
-                        <td>${u.reputationScore.toFixed(1)}</td>
+                        <td>${displayUserType(u)}</td>
+                        <td>${displayReputation(u)}</td>
                         <td>${formatDate(u.createdAt)}</td>
                     </tr>
                 `).join('')}
             </tbody>
         </table>
     `;
+}
+
+function displayUserType(user) {
+    return user.role === 'ADMIN' ? 'ADMIN' : user.userType;
+}
+
+function displayReputation(user) {
+    return user.role === 'ADMIN' ? 'N/A' : (user.reputationScore || 0).toFixed(1);
+}
+
+function reputationSortValue(user) {
+    return user.role === 'ADMIN' ? -1 : (user.reputationScore || 0);
 }
 
 function sortUsers(key) {
@@ -1727,7 +1947,6 @@ function applyAssessmentFilters() {
         (a.request?.equipmentCategory || '').toLowerCase().includes(search) ||
         (a.notes || '').toLowerCase().includes(search) ||
         String(a.rentalRequestId).includes(search));
-    if (rating || impact) queue = [];
     if (rating) list = list.filter(a => a.conditionRating === rating);
     if (impact === 'positive') list = list.filter(a => (a.reputationImpact || 0) > 0);
     if (impact === 'neutral') list = list.filter(a => (a.reputationImpact || 0) === 0);
@@ -1765,7 +1984,7 @@ function renderAssessmentQueue(queue) {
     const container = document.getElementById('assessment-queue-list');
     if (!container) return;
     if (queue.length === 0) {
-        const isFiltered = isAssessmentFiltered();
+        const isFiltered = isAssessmentQueueFiltered();
         container.innerHTML = emptyState(
             isFiltered ? 'No returned requests match your filters' : 'No requests awaiting assessment',
             isFiltered ? 'Clear filters to see the full assessment queue.' : 'Returned rentals will appear here before final assessment.'
@@ -1862,10 +2081,6 @@ function clearAssessmentControlConflicts(name) {
     (quickFilterConflicts.assessment[name] || []).forEach(clearAssessmentControlForQuick);
     const rating = document.getElementById('assess-rating-filter');
     const impact = document.getElementById('assess-impact-filter');
-    if (name === 'needs-assessment') {
-        if (rating) rating.value = '';
-        if (impact) impact.value = '';
-    }
     if (name === 'positive-impact') {
         if (['FAIR', 'POOR', 'DAMAGED'].includes(rating?.value)) rating.value = '';
         if (['negative', 'neutral'].includes(impact?.value)) impact.value = '';
@@ -1881,9 +2096,6 @@ function clearAssessmentControlConflicts(name) {
 }
 
 function syncAssessmentQuickFiltersWithControls(rating, impact, late) {
-    if (rating) {
-        removeQuickFilters('assessmentQuickFilters', 'assessment_quick_filters', ['needs-assessment']);
-    }
     if (['EXCELLENT', 'GOOD'].includes(rating)) {
         removeQuickFilters('assessmentQuickFilters', 'assessment_quick_filters', ['negative-impact', 'damage-issues']);
     } else if (rating === 'FAIR') {
@@ -1892,11 +2104,11 @@ function syncAssessmentQuickFiltersWithControls(rating, impact, late) {
         removeQuickFilters('assessmentQuickFilters', 'assessment_quick_filters', ['positive-impact']);
     }
     if (impact === 'positive') {
-        removeQuickFilters('assessmentQuickFilters', 'assessment_quick_filters', ['needs-assessment', 'negative-impact', 'damage-issues']);
+        removeQuickFilters('assessmentQuickFilters', 'assessment_quick_filters', ['negative-impact', 'damage-issues']);
     } else if (impact === 'negative') {
-        removeQuickFilters('assessmentQuickFilters', 'assessment_quick_filters', ['needs-assessment', 'positive-impact']);
+        removeQuickFilters('assessmentQuickFilters', 'assessment_quick_filters', ['positive-impact']);
     } else if (impact === 'neutral') {
-        removeQuickFilters('assessmentQuickFilters', 'assessment_quick_filters', ['needs-assessment', 'positive-impact', 'negative-impact', 'damage-issues']);
+        removeQuickFilters('assessmentQuickFilters', 'assessment_quick_filters', ['positive-impact', 'negative-impact', 'damage-issues']);
     }
     if (late === 'late') {
         removeQuickFilters('assessmentQuickFilters', 'assessment_quick_filters', ['on-time']);
@@ -1909,15 +2121,13 @@ function assessmentQueueQuickFilterMatches(req, name) {
     if (name === 'needs-assessment') return true;
     if (name === 'late') return returnedLateDays(req) > 0;
     if (name === 'on-time') return returnedLateDays(req) === 0;
-    if (name === 'positive-impact') return false;
-    if (name === 'negative-impact') return false;
-    if (name === 'damage-issues') return false;
+    if (['positive-impact', 'negative-impact', 'damage-issues'].includes(name)) return true;
     return true;
 }
 
 function assessmentHistoryQuickFilterMatches(assessment, name) {
     const late = assessment.request ? returnedLateDays(assessment.request) : 0;
-    if (name === 'needs-assessment') return false;
+    if (name === 'needs-assessment') return true;
     if (name === 'late') return late > 0;
     if (name === 'on-time') return late === 0;
     if (name === 'positive-impact') return (assessment.reputationImpact || 0) > 0;
@@ -2075,11 +2285,11 @@ function syncUsersQuickFiltersWithControls(type, role, reputation) {
 }
 
 function usersQuickFilterMatches(user, name) {
-    if (name === 'students') return user.userType === 'STUDENT';
-    if (name === 'non-students') return user.userType === 'NON_STUDENT';
+    if (name === 'students') return user.role === 'USER' && user.userType === 'STUDENT';
+    if (name === 'non-students') return user.role === 'USER' && user.userType === 'NON_STUDENT';
     if (name === 'admins') return user.role === 'ADMIN';
-    if (name === 'reputation-risk') return (user.reputationScore || 0) < 70;
-    if (name === 'top-reputation') return (user.reputationScore || 0) >= 130;
+    if (name === 'reputation-risk') return user.role === 'USER' && (user.reputationScore || 0) < 70;
+    if (name === 'top-reputation') return user.role === 'USER' && (user.reputationScore || 0) >= 130;
     return true;
 }
 
@@ -2188,30 +2398,58 @@ async function submitAssessment() {
     }
 }
 
-// ===== STRATEGY (Admin) =====
+// ===== STRATEGY CONTROLS (Admin) =====
 async function loadStrategy() {
     try {
         const data = await api('/admin/prioritization-strategy');
         state.activeStrategy = data.strategy;
-        document.getElementById('current-strategy').textContent = data.strategy;
-        document.getElementById('strategy-select').value = data.strategy;
+        updateStrategyControls(data.strategy);
     } catch (e) {
         showAlert('app-alert', e.message, 'error');
     }
 }
 
+function isAssessmentQueueFiltered() {
+    const queueFilters = ['needs-assessment', 'late', 'on-time'];
+    return !!(
+        document.getElementById('assess-search')?.value ||
+        document.getElementById('assess-late-filter')?.value ||
+        state.assessmentQuickFilters.some(name => queueFilters.includes(name))
+    );
+}
+
 async function changeStrategy() {
     try {
+        const selected = document.getElementById('strategy-select')?.value || state.activeStrategy;
         const data = await api('/admin/prioritization-strategy', {
             method: 'PUT',
-            body: JSON.stringify({ strategy: document.getElementById('strategy-select').value })
+            body: JSON.stringify({ strategy: selected })
         });
         state.activeStrategy = data.strategy;
-        document.getElementById('current-strategy').textContent = data.strategy;
-        toast('Strategy changed to ' + data.strategy, 'success');
+        updateStrategyControls(data.strategy);
+        state.requestsCache = await api('/rental-requests/all');
+        applyManageFilters();
+        toast('Strategy changed to ' + strategyDisplayName(data.strategy), 'success');
     } catch (e) {
         toast(e.message, 'error');
     }
+}
+
+function updateStrategyControls(strategy) {
+    const current = document.getElementById('current-strategy');
+    const select = document.getElementById('strategy-select');
+    const help = document.getElementById('strategy-help');
+    if (current) current.textContent = strategyDisplayName(strategy);
+    if (select) select.value = strategy;
+    if (help) {
+        help.textContent = strategy === 'fifo'
+            ? 'Pending requests are ordered by creation time; priority score remains visible as context.'
+            : 'Pending requests are ordered by calculated priority score, then by creation time.';
+    }
+}
+
+function strategyDisplayName(strategy) {
+    return strategy === 'fifo' ? 'FIFO (First In, First Out)' : 'Weighted Scoring';
 }
 
 // ===== RENDER HELPERS =====

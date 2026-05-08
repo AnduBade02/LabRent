@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import ro.atemustard.labrent.dto.QueuePositionDTO;
 import ro.atemustard.labrent.dto.RentalRequestCreateDTO;
 import ro.atemustard.labrent.dto.RentalRequestDTO;
 import ro.atemustard.labrent.service.RentalRequestService;
@@ -23,6 +24,7 @@ public class RentalRequestController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<RentalRequestDTO> createRequest(
             @Valid @RequestBody RentalRequestCreateDTO dto, Principal principal) {
         return ResponseEntity.ok(rentalRequestService.createRequest(dto, principal.getName()));
@@ -36,6 +38,11 @@ public class RentalRequestController {
     @GetMapping("/my-queue-positions")
     public ResponseEntity<Map<Long, Integer>> getMyQueuePositions(Principal principal) {
         return ResponseEntity.ok(rentalRequestService.getQueuePositionsForUser(principal.getName()));
+    }
+
+    @GetMapping("/my-queue-details")
+    public ResponseEntity<Map<Long, QueuePositionDTO>> getMyQueueDetails(Principal principal) {
+        return ResponseEntity.ok(rentalRequestService.getQueueDetailsForUser(principal.getName()));
     }
 
     @GetMapping("/pending")

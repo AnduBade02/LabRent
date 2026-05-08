@@ -2,11 +2,15 @@ package ro.atemustard.labrent.controller;
 
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ro.atemustard.labrent.dto.ReturnAssessmentCreateDTO;
 import ro.atemustard.labrent.dto.ReturnAssessmentDTO;
+import ro.atemustard.labrent.model.Role;
+import ro.atemustard.labrent.model.User;
 import ro.atemustard.labrent.service.ReturnAssessmentService;
+import ro.atemustard.labrent.service.UserService;
 
 import java.security.Principal;
 import java.util.List;
@@ -16,9 +20,12 @@ import java.util.List;
 public class ReturnAssessmentController {
 
     private final ReturnAssessmentService returnAssessmentService;
+    private final UserService userService;
 
-    public ReturnAssessmentController(ReturnAssessmentService returnAssessmentService) {
+    public ReturnAssessmentController(ReturnAssessmentService returnAssessmentService,
+                                      UserService userService) {
         this.returnAssessmentService = returnAssessmentService;
+        this.userService = userService;
     }
 
     @PostMapping
@@ -29,12 +36,18 @@ public class ReturnAssessmentController {
     }
 
     @GetMapping("/request/{requestId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ReturnAssessmentDTO> getByRequestId(@PathVariable Long requestId) {
         return ResponseEntity.ok(returnAssessmentService.getAssessmentByRequestId(requestId));
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<ReturnAssessmentDTO>> getUserHistory(@PathVariable Long userId) {
+    public ResponseEntity<List<ReturnAssessmentDTO>> getUserHistory(@PathVariable Long userId,
+                                                                    Principal principal) {
+        User current = userService.findEntityByUsername(principal.getName());
+        if (current.getRole() != Role.ADMIN && !current.getId().equals(userId)) {
+            throw new AccessDeniedException("Cannot view another user's assessment history");
+        }
         return ResponseEntity.ok(returnAssessmentService.getUserAssessmentHistory(userId));
     }
 }

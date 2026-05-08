@@ -1,0 +1,62 @@
+sequenceDiagram
+    autonumber
+
+    actor Client
+    participant UI as Frontend
+    participant C as RentalRequestController
+    participant S as RentalRequestService
+    participant US as UserService
+    participant ES as EquipmentService
+    participant F as RentalRequestFactory
+    participant RR as RentalRequestRepository
+    participant PS as PrioritizationService
+    participant NS as NotificationService
+    participant L as EmailNotificationListener
+
+    Client->>UI: Completeaza formular cerere
+    UI->>C: POST /api/rental-requests(dto, JWT)
+    C->>S: createRequest(dto, principal.name)
+
+    S->>US: findEntityByUsername(username)
+    US-->>S: User
+
+    S->>ES: findEntityById(dto.equipmentId)
+    ES-->>S: Equipment
+
+    alt availableQuantity <= 0
+        S-->>C: InvalidOperationException
+        C-->>UI: HTTP 400 - No available units
+        UI-->>Client: Afiseaza eroare stoc
+    else endDate <= startDate
+        S-->>C: InvalidOperationException
+        C-->>UI: HTTP 400 - End date must be after start date
+        UI-->>Client: Afiseaza eroare perioada
+    else date si stoc valide
+        alt userType STUDENT si isForExam true
+            S->>F: academicFactory.createRequest(user, equipment, dto)
+            F-->>S: AcademicRentalRequest
+        else standard sau non-student
+            S->>F: standardFactory.createRequest(user, equipment, dto)
+            F-->>S: StandardRentalRequest
+        end
+
+        S->>RR: save(request)
+        RR-->>S: request cu createdAt
+
+        S->>PS: calculatePriority(request)
+        PS-->>S: priorityScore
+
+        S->>RR: save(request cu priorityScore)
+        RR-->>S: request salvat
+
+        S->>PS: recalculateForEquipment(equipment.id)
+        PS-->>S: prioritati actualizate
+
+        S->>NS: notifyRequestCreated(request)
+        NS->>L: onRequestCreated(request)
+        L-->>NS: email trimis sau log DEV
+
+        S-->>C: RentalRequestDTO
+        C-->>UI: HTTP 200 + RentalRequestDTO
+        UI-->>Client: Afiseaza confirmare
+    end

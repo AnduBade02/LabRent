@@ -6,6 +6,7 @@ import ro.atemustard.labrent.dto.UserSummaryDTO;
 import ro.atemustard.labrent.model.Equipment;
 import ro.atemustard.labrent.model.RentalRequest;
 import ro.atemustard.labrent.model.RequestStatus;
+import ro.atemustard.labrent.model.Role;
 import ro.atemustard.labrent.model.User;
 import ro.atemustard.labrent.repository.EquipmentRepository;
 import ro.atemustard.labrent.repository.RentalRequestRepository;
@@ -84,6 +85,7 @@ public class AdminDashboardService {
         dto.setStatusDistribution(statusDist);
 
         List<UserSummaryDTO> topUsers = userRepository.findAll().stream()
+                .filter(u -> u.getRole() == Role.USER)
                 .sorted(Comparator.comparing(
                         User::getReputationScore,
                         Comparator.nullsLast(Comparator.reverseOrder())))

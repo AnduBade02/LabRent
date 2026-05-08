@@ -1,0 +1,55 @@
+flowchart LR
+    Operator[":Operator"]
+    C["c:ReturnAssessmentController"]
+    S["s:ReturnAssessmentService"]
+    RRS["rrs:RentalRequestService"]
+    RAR["rar:ReturnAssessmentRepository"]
+    US["us:UserService"]
+    ES["es:EquipmentService"]
+    PS["ps:PrioritizationService"]
+    NS["ns:NotificationService"]
+    L["l:EmailNotificationListener"]
+    DTO["ReturnAssessmentDTO"]
+
+    Operator -- "1: submit(dto)" --> C
+    C -- "2: submitAssessment(dto, operatorUsername)" --> S
+
+    S -- "2.1: findEntityById(rentalRequestId)" --> RRS
+    RRS -- "2.1.1: RentalRequest" --> S
+
+    S -- "2.2: findByRentalRequestId(requestId)" --> RAR
+    RAR -- "2.2.1: Optional&lt;ReturnAssessment&gt;" --> S
+
+    S -- "2.3: findEntityByUsername(operatorUsername)" --> US
+    US -- "2.3.1: User operator" --> S
+
+    S -- "2.4: build ReturnAssessment" --> S
+    S -- "2.5: calculate totalImpact" --> S
+
+    S -- "2.6: save(assessment)" --> RAR
+    RAR -- "2.6.1: ReturnAssessment" --> S
+
+    S -- "2.7: request.status = COMPLETED" --> S
+    S -- "2.8: updateReputationScore(userId, totalImpact)" --> US
+    S -- "2.9: recalculateForUser(userId)" --> PS
+    S -- "2.10: releaseUnit(equipmentId)" --> ES
+    S -- "2.11: notifyAssessmentCompleted(assessment)" --> NS
+    NS -- "2.11.1: onAssessmentCompleted(assessment)" --> L
+
+    S -- "2.12: ReturnAssessmentDTO" --> DTO
+    DTO -- "2.13" --> C
+    C -- "3: HTTP 200 + DTO" --> Operator
+
+    Note1["Validari inainte de salvare:<br/>1. request exista<br/>2. status == RETURNED<br/>3. nu exista assessment duplicat"]
+    Note2["Nota: DAMAGED modifica reputatia.<br/>Codul actual nu trimite echipamentul in IN_SERVICE."]
+
+    S -.-> Note1
+    S -.-> Note2
+
+    classDef central fill:#eff6ff,stroke:#2563eb,stroke-width:2px
+    classDef collaborator fill:#f8fafc,stroke:#475569,stroke-width:1px
+    classDef note fill:#fff7ed,stroke:#c2410c,stroke-width:1px
+
+    class S central
+    class Operator,C,RRS,RAR,US,ES,PS,NS,L,DTO collaborator
+    class Note1,Note2 note

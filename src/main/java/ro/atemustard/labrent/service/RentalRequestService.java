@@ -2,6 +2,7 @@ package ro.atemustard.labrent.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ro.atemustard.labrent.dto.QueuePositionDTO;
 import ro.atemustard.labrent.dto.RentalRequestCreateDTO;
 import ro.atemustard.labrent.dto.RentalRequestDTO;
 import ro.atemustard.labrent.exception.InvalidOperationException;
@@ -111,8 +112,7 @@ public class RentalRequestService {
 
     /**
      * For each of the caller's PENDING requests, returns its 1-based position
-     * in the priority queue for its equipment. Lets the client dashboard show
-     * "Position X of Y" without N+1 calls.
+     * in the priority queue for its equipment.
      */
     public Map<Long, Integer> getQueuePositionsForUser(String username) {
         User user = userService.findEntityByUsername(username);
@@ -133,6 +133,35 @@ public class RentalRequestService {
             positions.put(req.getId(), position);
         }
         return positions;
+    }
+
+    /**
+     * For each of the caller's PENDING requests, returns both its 1-based
+     * position and the total number of PENDING requests in that equipment queue.
+     */
+    public Map<Long, QueuePositionDTO> getQueueDetailsForUser(String username) {
+        User user = userService.findEntityByUsername(username);
+        List<RentalRequest> myPending = rentalRequestRepository
+                .findByUserIdAndStatus(user.getId(), RequestStatus.PENDING);
+
+        Map<Long, QueuePositionDTO> details = new HashMap<>();
+        for (RentalRequest req : myPending) {
+            List<RentalRequest> queue = prioritizationService
+                    .getPrioritizedQueue(req.getEquipment().getId());
+            int position = 0;
+            for (int i = 0; i < queue.size(); i++) {
+                if (queue.get(i).getId().equals(req.getId())) {
+                    position = i + 1;
+                    break;
+                }
+            }
+            details.put(req.getId(), new QueuePositionDTO(
+                    req.getId(),
+                    req.getEquipment().getId(),
+                    position,
+                    queue.size()));
+        }
+        return details;
     }
 
     @Transactional

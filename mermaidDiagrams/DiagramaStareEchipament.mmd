@@ -1,0 +1,25 @@
+stateDiagram-v2
+    [*] --> AVAILABLE: creare Equipment
+
+    AVAILABLE --> RESERVED: reserve()
+    RESERVED --> RENTED: rent()
+    RESERVED --> AVAILABLE: makeAvailable()\nrezervare anulata
+    RENTED --> RETURNED: returnEquipment()
+    RETURNED --> AVAILABLE: makeAvailable()\nretur acceptat
+    RETURNED --> IN_SERVICE: sendToService()\nconditionRating == DAMAGED
+    IN_SERVICE --> AVAILABLE: makeAvailable()\ndupa reparatie
+
+    note right of AVAILABLE
+        In cod, aceasta state machine exista in pachetul model/state.
+        Equipment este totusi un tip de echipament cu stoc, nu o unitate fizica.
+    end note
+
+    note right of RETURNED
+        In fluxurile de service, lifecycle-ul complet al inchirierii
+        este urmarit prin RequestStatus pe RentalRequest.
+    end note
+
+    note right of IN_SERVICE
+        Ramura DAMAGED -> IN_SERVICE este implementata in state machine,
+        dar ReturnAssessmentService nu o apeleaza in codul actual.
+    end note
