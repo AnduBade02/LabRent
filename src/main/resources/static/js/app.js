@@ -1,6 +1,31 @@
 // ===== STATE =====
-let token = localStorage.getItem('jwt_token');
-let currentUser = JSON.parse(localStorage.getItem('current_user') || 'null');
+const AUTH_TOKEN_KEY = 'jwt_token';
+const AUTH_USER_KEY = 'current_user';
+const sectionSubdomains = {
+    dashboard: 'dashboard',
+    equipment: 'equipment',
+    'my-requests': 'my-requests',
+    'new-request': 'new-request',
+    'pending-requests': 'manage-requests',
+    'all-users': 'users',
+    assessments: 'assessments'
+};
+const subdomainSections = {
+    dashboard: 'dashboard',
+    equipment: 'equipment',
+    'my-requests': 'my-requests',
+    requests: 'my-requests',
+    'new-request': 'new-request',
+    'manage-requests': 'pending-requests',
+    manage: 'pending-requests',
+    users: 'all-users',
+    assessments: 'assessments'
+};
+
+let token = localStorage.getItem(AUTH_TOKEN_KEY) || readCookie(AUTH_TOKEN_KEY);
+let currentUser = parseStoredUser(localStorage.getItem(AUTH_USER_KEY) || readCookie(AUTH_USER_KEY));
+if (token) localStorage.setItem(AUTH_TOKEN_KEY, token);
+if (currentUser) localStorage.setItem(AUTH_USER_KEY, JSON.stringify(currentUser));
 
 // Caches populated at load time and reused by filter/sort handlers
 // (avoid refetching on every keystroke)
@@ -25,6 +50,9 @@ const state = {
     simulationTimer: null,
     simulationTickInFlight: false,
     simulationCreatedCount: 0,
+    realtimeSocket: null,
+    realtimeReconnectTimer: null,
+    realtimeRefreshTimers: {},
     charts: { status: null, topUsers: null, utilization: null }
 };
 
@@ -67,6 +95,105 @@ const quickFilterConflicts = {
         'damage-issues': ['positive-impact']
     }
 };
+
+function parseStoredUser(raw) {
+    if (!raw) return null;
+    try {
+        return JSON.parse(raw);
+    } catch (e) {
+        return null;
+    }
+}
+
+function readCookie(name) {
+    const prefix = name + '=';
+    const item = document.cookie
+        .split(';')
+        .map(part => part.trim())
+        .find(part => part.startsWith(prefix));
+    if (!item) return null;
+    try {
+        return decodeURIComponent(item.substring(prefix.length));
+    } catch (e) {
+        return null;
+    }
+}
+
+function writeAuthCookie(name, value) {
+    const attrs = [
+        'path=/',
+        'SameSite=Lax',
+        'max-age=' + (60 * 60 * 24 * 7)
+    ];
+    const domain = sharedCookieDomain();
+    if (domain) attrs.push('Domain=' + domain);
+    if (window.location.protocol === 'https:') attrs.push('Secure');
+    document.cookie = `${name}=${encodeURIComponent(value)}; ${attrs.join('; ')}`;
+}
+
+function clearAuthCookie(name) {
+    const attrs = ['path=/', 'max-age=0'];
+    const domain = sharedCookieDomain();
+    document.cookie = `${name}=; ${attrs.join('; ')}`;
+    if (domain) {
+        document.cookie = `${name}=; ${attrs.join('; ')}; Domain=${domain}`;
+    }
+}
+
+function sharedCookieDomain() {
+    if (!supportsSubdomainRouting()) return '';
+    const base = appBaseHostname();
+    if (!base.includes('.') || base === 'localhost') return '';
+    return '.' + base;
+}
+
+function supportsSubdomainRouting() {
+    const host = window.location.hostname.toLowerCase();
+    return host.includes('.') && !isIpHost(host);
+}
+
+function isIpHost(host) {
+    return /^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.includes(':');
+}
+
+function currentSubdomain() {
+    const host = window.location.hostname.toLowerCase();
+    if (!supportsSubdomainRouting()) return '';
+    const parts = host.split('.');
+    return parts.length > 2 ? parts[0] : '';
+}
+
+function appBaseHostname() {
+    const host = window.location.hostname.toLowerCase();
+    if (!supportsSubdomainRouting()) return host;
+    const parts = host.split('.');
+    const first = parts[0];
+    if (subdomainSections[first] && parts.length > 2) {
+        return parts.slice(1).join('.');
+    }
+    return host;
+}
+
+function sectionFromSubdomain() {
+    const section = subdomainSections[currentSubdomain()];
+    return section || null;
+}
+
+function targetHostnameForSection(name) {
+    const subdomain = sectionSubdomains[name];
+    if (!subdomain || !supportsSubdomainRouting()) return window.location.hostname;
+    return subdomain + '.' + appBaseHostname();
+}
+
+function shouldNavigateToSectionHost(name) {
+    if (!supportsSubdomainRouting()) return false;
+    return window.location.hostname.toLowerCase() !== targetHostnameForSection(name).toLowerCase();
+}
+
+function sectionUrl(name) {
+    const port = window.location.port ? ':' + window.location.port : '';
+    return `${window.location.protocol}//${targetHostnameForSection(name)}${port}/`;
+}
 
 function loadManageQuickFilters() {
     try {
@@ -216,17 +343,22 @@ async function register() {
 function saveAuth(data) {
     token = data.token;
     currentUser = data.user;
-    localStorage.setItem('jwt_token', token);
-    localStorage.setItem('current_user', JSON.stringify(currentUser));
+    localStorage.setItem(AUTH_TOKEN_KEY, token);
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(currentUser));
+    writeAuthCookie(AUTH_TOKEN_KEY, token);
+    writeAuthCookie(AUTH_USER_KEY, JSON.stringify(currentUser));
     enterApp();
 }
 
 function logout() {
     stopSimulation(false);
+    disconnectRealtime();
     token = null;
     currentUser = null;
-    localStorage.removeItem('jwt_token');
-    localStorage.removeItem('current_user');
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(AUTH_USER_KEY);
+    clearAuthCookie(AUTH_TOKEN_KEY);
+    clearAuthCookie(AUTH_USER_KEY);
     document.getElementById('auth-screen').classList.remove('hidden');
     document.getElementById('app-screen').classList.add('hidden');
 }
@@ -256,16 +388,28 @@ function enterApp() {
 
     if (!isAdmin) stopSimulation(false);
     updateSimulationControls();
-    showSection('dashboard');
+    connectRealtime();
+    const hostSection = sectionFromSubdomain();
+    showSection(hostSection || 'dashboard', { skipHostNavigation: !!hostSection });
 }
 
 // ===== NAVIGATION =====
-function showSection(name) {
+function showSection(name, options = {}) {
     const isAdmin = currentUser && currentUser.role === 'ADMIN';
     if (isAdmin && ['my-requests', 'new-request'].includes(name)) {
         showSection('dashboard');
         return;
     }
+    if (!isAdmin && ['pending-requests', 'all-users', 'assessments'].includes(name)) {
+        showSection('dashboard');
+        return;
+    }
+
+    if (!options.skipHostNavigation && shouldNavigateToSectionHost(name)) {
+        window.location.assign(sectionUrl(name));
+        return;
+    }
+
     // Admin sees the admin dashboard when clicking "Dashboard"
     const targetId = (name === 'dashboard' && isAdmin)
         ? 'section-admin-dashboard'
@@ -374,6 +518,117 @@ function refreshSimulationViews() {
     }
 }
 
+// ===== REALTIME UPDATES =====
+function connectRealtime() {
+    if (!token || !currentUser || !window.WebSocket) return;
+    if (state.realtimeSocket &&
+        [WebSocket.OPEN, WebSocket.CONNECTING].includes(state.realtimeSocket.readyState)) {
+        return;
+    }
+
+    if (state.realtimeReconnectTimer) {
+        clearTimeout(state.realtimeReconnectTimer);
+        state.realtimeReconnectTimer = null;
+    }
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const socket = new WebSocket(`${protocol}//${window.location.host}/ws/live?token=${encodeURIComponent(token)}`);
+    state.realtimeSocket = socket;
+
+    socket.onmessage = event => {
+        try {
+            handleRealtimeEvent(JSON.parse(event.data));
+        } catch (e) {
+            console.debug('Ignored malformed realtime event', e);
+        }
+    };
+
+    socket.onclose = () => {
+        if (state.realtimeSocket === socket) {
+            state.realtimeSocket = null;
+        }
+        if (token && currentUser) {
+            state.realtimeReconnectTimer = setTimeout(connectRealtime, 4000);
+        }
+    };
+
+    socket.onerror = () => socket.close();
+}
+
+function disconnectRealtime() {
+    if (state.realtimeReconnectTimer) {
+        clearTimeout(state.realtimeReconnectTimer);
+        state.realtimeReconnectTimer = null;
+    }
+    Object.values(state.realtimeRefreshTimers).forEach(clearTimeout);
+    state.realtimeRefreshTimers = {};
+    if (state.realtimeSocket) {
+        state.realtimeSocket.close();
+        state.realtimeSocket = null;
+    }
+}
+
+function handleRealtimeEvent(event) {
+    if (!event || event.type !== 'RENTAL_REQUEST' || !currentUser) return;
+
+    const isAdmin = currentUser.role === 'ADMIN';
+    const isOwnEvent = event.username === currentUser.username;
+    if (!isAdmin && !isOwnEvent) return;
+
+    const activeId = document.querySelector('.section.active')?.id;
+    const message = realtimeEventMessage(event);
+
+    if (isAdmin) {
+        if (activeId === 'section-admin-dashboard') {
+            scheduleRealtimeRefresh('admin-dashboard', loadAdminDashboard, message);
+        } else if (activeId === 'section-pending-requests') {
+            scheduleRealtimeRefresh('pending-requests', loadPendingRequests, message);
+        } else if (activeId === 'section-assessments' &&
+            ['returned', 'assessment_completed'].includes(event.action)) {
+            scheduleRealtimeRefresh('assessments', loadAssessments, message);
+        } else if (activeId === 'section-equipment' &&
+            ['approved', 'assessment_completed'].includes(event.action)) {
+            scheduleRealtimeRefresh('equipment', loadEquipment, message);
+        } else if (activeId === 'section-all-users' && event.action === 'assessment_completed') {
+            scheduleRealtimeRefresh('users', loadAllUsers, message);
+        }
+        return;
+    }
+
+    if (activeId === 'section-dashboard') {
+        scheduleRealtimeRefresh('client-dashboard', loadClientDashboard, message);
+    } else if (activeId === 'section-my-requests') {
+        scheduleRealtimeRefresh('my-requests', loadMyRequests, message);
+    } else if (activeId === 'section-equipment' &&
+        ['approved', 'rejected', 'rented', 'returned', 'assessment_completed'].includes(event.action)) {
+        scheduleRealtimeRefresh('equipment', loadEquipment, message);
+    }
+}
+
+function scheduleRealtimeRefresh(key, loader, message) {
+    if (state.realtimeRefreshTimers[key]) {
+        clearTimeout(state.realtimeRefreshTimers[key]);
+    }
+    state.realtimeRefreshTimers[key] = setTimeout(async () => {
+        delete state.realtimeRefreshTimers[key];
+        await loader();
+        if (message) toast(message, 'info');
+    }, 350);
+}
+
+function realtimeEventMessage(event) {
+    const actions = {
+        created: 'New rental request received',
+        approved: 'Rental request approved',
+        rejected: 'Rental request rejected',
+        rented: 'Rental marked as rented',
+        returned: 'Rental marked as returned',
+        assessment_completed: 'Return assessment completed'
+    };
+    const suffix = event.equipmentName ? `: ${event.equipmentName}` : '';
+    return (actions[event.action] || 'Rental requests updated') + suffix;
+}
+
 // ===== CLIENT DASHBOARD =====
 async function loadClientDashboard() {
     try {
@@ -384,7 +639,8 @@ async function loadClientDashboard() {
             api('/rental-requests/my-queue-positions')
         ]);
         currentUser = me;
-        localStorage.setItem('current_user', JSON.stringify(me));
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(me));
+        writeAuthCookie(AUTH_USER_KEY, JSON.stringify(me));
 
         const available = equipment.filter(e => e.availableQuantity > 0).length;
         const activeRentals = myRequests.filter(r => r.status === 'RENTED');

@@ -35,6 +35,10 @@ public class NotificationService {
         listeners.forEach(l -> l.onRequestRejected(request));
     }
 
+    public void notifyRequestRented(RentalRequest request) {
+        listeners.forEach(l -> l.onRequestRented(request));
+    }
+
     public void notifyEquipmentReturned(RentalRequest request) {
         listeners.forEach(l -> l.onEquipmentReturned(request));
     }

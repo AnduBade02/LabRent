@@ -22,6 +22,10 @@ public interface RentalEventListener {
 
     void onRequestRejected(RentalRequest request);
 
+    default void onRequestRented(RentalRequest request) {
+        // Optional lifecycle hook for listeners that need RENTED transitions.
+    }
+
     void onEquipmentReturned(RentalRequest request);
 
     void onAssessmentCompleted(ReturnAssessment assessment);

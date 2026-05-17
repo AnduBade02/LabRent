@@ -63,7 +63,7 @@ The application models a real laboratory workflow: users browse equipment, submi
 | --- | --- |
 | Language | Java 17 |
 | Framework | Spring Boot 3.4.3 |
-| Web layer | Spring MVC / REST controllers |
+| Web layer | Spring MVC / REST controllers / WebSocket |
 | Persistence | Spring Data JPA, Hibernate |
 | Security | Spring Security, JWT |
 | Validation | Jakarta Bean Validation |
@@ -80,7 +80,7 @@ The application models a real laboratory workflow: users browse equipment, submi
 | Styling | Custom CSS |
 | Logic | Vanilla JavaScript |
 | Charts | Chart.js |
-| Auth storage | JWT and current user saved in `localStorage` |
+| Auth storage | JWT and current user saved in `localStorage`, mirrored in a shared cookie for subdomains |
 
 ### Runtime
 
@@ -726,7 +726,11 @@ Main UI sections:
 Frontend responsibilities:
 
 - Stores JWT and current user in `localStorage`.
+- Mirrors authentication in a shared cookie when running on a domain that supports subdomains.
 - Adds `Authorization: Bearer <token>` to API calls.
+- Opens an authenticated WebSocket at `/ws/live` for live request updates.
+- Maps tab navigation to subdomains when the app runs on a non-localhost domain:
+  `dashboard`, `equipment`, `my-requests`, `new-request`, `manage-requests`, `users`, and `assessments`.
 - Renders equipment cards, request cards, tables, modals, badges, and filters.
 - Provides advanced filtering for equipment, user requests, admin request management, users, and assessments.
 - Displays queue position information.
@@ -800,6 +804,17 @@ Application URL:
 ```text
 http://localhost:8080/
 ```
+
+Subdomain navigation is enabled when the browser host is not `localhost`.
+For local testing without editing DNS, use a wildcard loopback domain such as:
+
+```text
+http://dashboard.lvh.me:8080/
+http://equipment.lvh.me:8080/
+http://manage-requests.lvh.me:8080/
+```
+
+All tab subdomains point to the same Spring Boot application and render the matching frontend section.
 
 PostgreSQL connection:
 

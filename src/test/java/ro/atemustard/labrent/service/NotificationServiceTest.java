@@ -27,15 +27,18 @@ class NotificationServiceTest {
         service.notifyRequestCreated(r);
         service.notifyRequestApproved(r);
         service.notifyRequestRejected(r);
+        service.notifyRequestRented(r);
         service.notifyEquipmentReturned(r);
 
         verify(a).onRequestCreated(r);
         verify(a).onRequestApproved(r);
         verify(a).onRequestRejected(r);
+        verify(a).onRequestRented(r);
         verify(a).onEquipmentReturned(r);
         verify(b).onRequestCreated(r);
         verify(b).onRequestApproved(r);
         verify(b).onRequestRejected(r);
+        verify(b).onRequestRented(r);
         verify(b).onEquipmentReturned(r);
     }
 }

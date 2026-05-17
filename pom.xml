@@ -30,6 +30,12 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- Spring WebSocket: live frontend refresh for rental events -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
         <!-- Spring Data JPA: ORM layer, auto-generates SQL from Java interfaces -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

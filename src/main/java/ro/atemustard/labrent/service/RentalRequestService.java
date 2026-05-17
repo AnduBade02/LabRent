@@ -196,6 +196,8 @@ public class RentalRequestService {
 
         request.setStatus(RequestStatus.RENTED);
         request = rentalRequestRepository.save(request);
+
+        notificationService.notifyRequestRented(request);
         return RentalRequestDTO.fromEntity(request);
     }
 

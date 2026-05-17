@@ -166,6 +166,7 @@ class RentalRequestServiceTest {
 
         service.markAsRented(10L);
         assertThat(r.getStatus()).isEqualTo(RequestStatus.RENTED);
+        verify(notificationService).notifyRequestRented(r);
     }
 
     @Test
